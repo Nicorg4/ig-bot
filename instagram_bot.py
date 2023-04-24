@@ -18,7 +18,7 @@ import tkinter as tk
 from tkinter import filedialog
 
 CONTACTED_USERS = []
-CURRENT_USER = ''
+CURRENT_USER = []
 DMS = 3
 COMMENTS = 5
 DRIVER = None
@@ -39,51 +39,40 @@ def create_webdriver():
 def get_website():
     # Ingresar a la pagina solicitada
     DRIVER.get("https://www.instagram.com")
-    sleep(3)
 
-def login_user(user):
+def login_user():
     # Buscar los inputs del form de login
     username_input = wait_for_XPATH('//*[@id="loginForm"]/div/div[1]/div/label/input')
     password_input = wait_for_XPATH('//*[@id="loginForm"]/div/div[2]/div/label/input')
 
     # Insertar las credenciales en los inputs
-    username_input.send_keys(user[0])
-    password_input.send_keys(user[1])
-    sleep(3)
+    username_input.send_keys(CURRENT_USER[0])
+    password_input.send_keys(CURRENT_USER[1])
 
     # Buscar y clickear el boton de login
     login_button = wait_for_XPATH('//*[@id="loginForm"]/div/div[3]/button')
     login_button.click()
 
-    sleep(5)
+    sleep(3)
 
-def get_location_page(user):
-    try:
-        sleep(5)
-        DRIVER.find_element(By.XPATH, "//span[contains(text(), 'Log in with Facebook')]")
-        get_website()
-        login_user(user)
+    print('\nSe esta utilizando la cuenta de: ', CURRENT_USER[0])
 
-    except NoSuchElementException:
-        # Acceder a la pagina del lugar
-        location_address = "https://www.instagram.com/explore/locations/{}/{}/".format(user[3], user[2])
-        DRIVER.get(location_address)
-        sleep(5)
-
+def get_location_page():
+    # Acceder a la pagina del lugar
+    wait_for_XPATH("//button[contains(text(),'Save Info')]")
+    location_address = "https://www.instagram.com/explore/locations/{}/{}/".format(CURRENT_USER[3], CURRENT_USER[2])
+    DRIVER.get(location_address)
 
 def click_on_post():
     # Ingresar al primer post
     first_post = wait_for_CLASS('_aagw')
     first_post.click()
-    sleep(5)
 
 def comment_posts():
     i = 0
     while i < COMMENTS:
-        username_anchor = wait_for_XPATH("//div[@class='xt0psk2']//a")
-        current_username = username_anchor.text
-        print('Trying to send comment to: ',  current_username)
-        sleep(3)
+        current_username = (wait_for_XPATH("//div[@class='xt0psk2']//a")).text
+        print('Buscando a', current_username, 'en la base de datos')
         if check_user_in_db(current_username) or check_user_contacted(current_username):
             print('El usuario ya fue contactado anteriormente')
             next_post()
@@ -95,10 +84,16 @@ def comment_posts():
                 next_post()
             else:
                 save_owner_username(current_username)
-                sleep(3)
                 if i != COMMENTS - 1:
                     next_post()
                 i += 1
+
+def next_post():
+    svg_elements = DRIVER.find_elements(By.TAG_NAME, "svg")
+    for svg in svg_elements:
+        if svg.get_attribute('aria-label') == 'Next':
+            svg.click()
+            break
 
 def leave_a_comment(username):
     try:
@@ -121,46 +116,41 @@ def leave_a_comment(username):
 def save_owner_username(current_username):
     if current_username not in CONTACTED_USERS:
         CONTACTED_USERS.append(current_username)
-        sleep(2)
+    else:
+        print('El usuario ya fue contactado anteriormente')
         
-def next_post():
-    svg_elements = DRIVER.find_elements(By.TAG_NAME, "svg")
-    found = False
-    for svg in svg_elements:
-        if svg.get_attribute('aria-label') == 'Next':
-            found = True
-            svg.click()
-            break
-    if not found:
-        print("Next button not found")
-
 def contact_users():
     write_users_on_db()
     visit_profile()
 
 def visit_profile():
     i = 0
-    while i < DMS:
-        username = CONTACTED_USERS[i]
-        location_address = "https://www.instagram.com/{}".format(username)
-        DRIVER.get(location_address)
-        sleep(5)
-        if check_user_messaged(username):
-            print('Ya se le envio un mensaje a este usuario')
-        else:
-            message = send_message(username)
-            if message == None:
-                CONTACTED_USERS.remove(username)
-                register_failed_message(username)
+    try:
+        while i < DMS:
+            username = CONTACTED_USERS[i]
+            location_address = "https://www.instagram.com/{}".format(username)
+            DRIVER.get(location_address)
+            if check_user_messaged(username):
+                print('Ya se le envio un mensaje a este usuario')
             else:
-                print("Se mando el mensaje")
-                register_message(username, message, CURRENT_USER)
-                i = i + 1 
+                message= (send_message(username))[0]
+                reason= (send_message(username))[1]
+                if message == None:
+                    CONTACTED_USERS.remove(username)
+                    register_failed_message(username, reason)
+                else:
+                    register_message(username, message, CURRENT_USER)
+                    print("Mensaje enviado exitosamente a:", username)
+                    i = i + 1 
+    except:
+        return print('No hay mas usuarios para contactar')
 
 def send_message(username):
     message_button = message_button_missing_handler("div.x1i10hfl[role='button']")
+    reason = ''
     if message_button == None:
-        return None 
+        reason = 'El usuario no puede recibir mensajes'
+        return [None, reason]
     message_button.click()
 
     sleep(5)
@@ -179,12 +169,13 @@ def send_message(username):
         message_textarea.send_keys(message)
     except NoSuchElementException:
         message = None
+        reason = 'El usuario tiene la cuenta privada'
         
     sleep(3)
 
     #pyautogui.press('enter')
 
-    return message
+    return [message, reason]
 
 def register_message(user, message, CURRENT_USER):
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -204,8 +195,6 @@ def register_message(user, message, CURRENT_USER):
     # Escribir el contenido actualizado de vuelta al archivo JSON
     with open("message_register.json", "w") as file:
         json.dump(message_register, file)
-    
-    print("Mensaje enviado exitosamente a: ", user)
    
 def exit_webdriver():
     DRIVER.quit()
@@ -288,7 +277,6 @@ def wait_for_CSS(css_selector):
 def message_button_missing_handler(css_selector):
     try:
         element = WebDriverWait(DRIVER, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, css_selector)))
-        print('Boton message encontrado')
     except:
         element = None
 
@@ -297,7 +285,6 @@ def message_button_missing_handler(css_selector):
 def check_user_in_db(username):
     try:
         with open('contacted_users.txt', 'r') as f:
-            print("Archivo abierto")
             content = f.read()
             usernames = content.split('\n')
     except:
@@ -319,9 +306,10 @@ def check_user_contacted(username):
 
     return False
 
-def register_failed_message(username):
+def register_failed_message(username, reason):
     with open('failed_message_register.txt', 'a+') as f:
         f.write(username)
+        f.write(' - ' + reason)
         f.write('\n')
         f.close()
 
@@ -336,7 +324,7 @@ def check_user_messaged(username):
             return True
     return False
 
-def main(user):
+def main():
 
     global DRIVER
 
@@ -344,9 +332,9 @@ def main(user):
     
     get_website() #Ingresa a https://www.instagram.com
     
-    login_user(user) #Logea al usuario que se va a utilizar
+    login_user() #Logea al usuario que se va a utilizar
 
-    get_location_page(user) #Ingresa a la locacion que le corresponde al usuario actual
+    get_location_page() #Ingresa a la locacion que le corresponde al usuario actual
     
     click_on_post() # Hace un click en el primer post para ingresar a el
 
@@ -366,10 +354,9 @@ def start_bot():
 
     for user in users:
         global CURRENT_USER
-        CURRENT_USER = user[0]
-        print('\nSe esta utilizando la cuenta de: ', CURRENT_USER)
+        CURRENT_USER = user
         global CONTACTED_USERS 
         CONTACTED_USERS = []
-        main(user)
+        main()
 
 start_bot()
