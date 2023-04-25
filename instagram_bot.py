@@ -55,7 +55,7 @@ def login_user():
 
     sleep(3)
 
-    print('\nSe esta utilizando la cuenta de: ', CURRENT_USER[0])
+    print('\nSe esta utilizando la cuenta de:', CURRENT_USER[0], '\n\n')
 
 def get_location_page():
     # Acceder a la pagina del lugar
@@ -72,15 +72,14 @@ def comment_posts():
     i = 0
     while i < COMMENTS:
         current_username = (wait_for_XPATH("//div[@class='xt0psk2']//a")).text
-        print('Buscando a', current_username, 'en la base de datos')
         if check_user_in_db(current_username) or check_user_contacted(current_username):
-            print('El usuario ya fue contactado anteriormente')
+            print('[-] El usuario', current_username,'ya fue contactado anteriormente', '\n')
             next_post()
         else:
-            print('El usuario no esta registrado, se le enviara un comentario')
+            print('[+] El usuario', current_username,'no esta registrado, se le enviara un comentario')
             comment_sent = leave_a_comment(current_username)
             if comment_sent == None:
-                print('No se puede enviar el comentario')
+                print('[-] El usuario', current_username,'no puede recibir comentarios', '\n')
                 next_post()
             else:
                 save_owner_username(current_username)
@@ -108,15 +107,13 @@ def leave_a_comment(username):
     post_button = wait_for_XPATH("//div[contains(text(),'Post')]")
     #post_button.click()
     #sleep(2)
-    print("Se realizo un comentario con exito a:", username)
+    print("[+] Se realizo un comentario con exito a:", username, '\n')
 
     return comment
 
 def save_owner_username(current_username):
-    if current_username not in CONTACTED_USERS:
-        CONTACTED_USERS.append(current_username)
-    else:
-        print('El usuario ya fue contactado anteriormente')
+    CONTACTED_USERS.append(current_username)
+
         
 def contact_users():
     write_users_on_db()
@@ -130,7 +127,7 @@ def visit_profile():
             location_address = "https://www.instagram.com/{}".format(username)
             DRIVER.get(location_address)
             if check_user_messaged(username):
-                print('Ya se le envio un mensaje a este usuario')
+                print('[-] El usuario', username, 'ya fue contactado anteriormente')
             else:
                 message_info = send_message(username)
                 message= message_info[0]
@@ -140,17 +137,17 @@ def visit_profile():
                     register_failed_message(username, reason)
                 else:
                     register_message(username, message, CURRENT_USER)
-                    print("Mensaje enviado exitosamente a:", username)
+                    print("[+] Mensaje enviado exitosamente a:", username, '\n')
                     i = i + 1 
     except:
-        return print('No hay mas usuarios para contactar')
+        return print('[-] No hay mas usuarios para contactar')
 
 def send_message(username):
     message_button = message_button_missing_handler("div.x1i10hfl[role='button']")
     reason = ''
     if message_button == None:
         reason = 'El usuario no puede recibir mensajes'
-        print('El usuario no puede recibir mensajes')
+        print('[-] El usuario', username, 'no puede recibir mensajes')
         return [None, reason]
     message_button.click()
 
@@ -171,9 +168,9 @@ def send_message(username):
     except NoSuchElementException:
         message = None
         reason = 'El usuario tiene la cuenta privada'
-        print('El usuario tiene la cuenta privada')
+        print('[-] El usuario', username, 'tiene la cuenta privada', '\n')
 
-    #sleep(2)
+    sleep(3)
     #pyautogui.press('enter')
     #sleep(1)
 
@@ -290,7 +287,6 @@ def check_user_in_db(username):
             content = f.read()
             usernames = content.split('\n')
     except:
-        print("Archivo no disponible")
         return False
 
     found = False
@@ -357,8 +353,6 @@ def start_bot():
     for user in users:
         global CURRENT_USER
         CURRENT_USER = user
-        global CONTACTED_USERS 
-        CONTACTED_USERS = []
         main()
 
 start_bot()
