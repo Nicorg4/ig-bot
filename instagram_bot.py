@@ -105,10 +105,9 @@ def leave_a_comment(username):
     except:
         return None
 
-    sleep(3)
-
     post_button = wait_for_XPATH("//div[contains(text(),'Post')]")
     #post_button.click()
+    #sleep(2)
     print("Se realizo un comentario con exito a:", username)
 
     return comment
@@ -133,8 +132,9 @@ def visit_profile():
             if check_user_messaged(username):
                 print('Ya se le envio un mensaje a este usuario')
             else:
-                message= (send_message(username))[0]
-                reason= (send_message(username))[1]
+                message_info = send_message(username)
+                message= message_info[0]
+                reason= message_info[1]
                 if message == None:
                     CONTACTED_USERS.remove(username)
                     register_failed_message(username, reason)
@@ -150,16 +150,17 @@ def send_message(username):
     reason = ''
     if message_button == None:
         reason = 'El usuario no puede recibir mensajes'
+        print('El usuario no puede recibir mensajes')
         return [None, reason]
     message_button.click()
 
-    sleep(5)
+    sleep(3)
 
     try:
         not_now_button = DRIVER.find_element(By.XPATH, "//button[text()='Not Now']")
         not_now_button.click()
-    except NoSuchElementException:
-        print("El botón 'Not Now' no está disponible.")
+    except:
+        pass
     
     sleep(3)
 
@@ -170,10 +171,11 @@ def send_message(username):
     except NoSuchElementException:
         message = None
         reason = 'El usuario tiene la cuenta privada'
-        
-    sleep(3)
+        print('El usuario tiene la cuenta privada')
 
+    #sleep(2)
     #pyautogui.press('enter')
+    #sleep(1)
 
     return [message, reason]
 
