@@ -23,14 +23,20 @@ from tkinter import filedialog
 DRIVER = None
 USER = None
 COMMENTS_INDEX = 0
-
 OPERATOR_NAME = 'Nicolas'
-LOCATIONS = [['miami-beach-florida', '212928653', 3, 1]] #[LOCATION, LOCATION_ID, COMMENTS, MESSAGES]
-PLACES = [['kikiontheriver', 3, 1]] #[PLACE, COMMENTS, MESSAGES]
-HASHTAGS = [['messi', 3, 1]] #[HASHTAG, COMMENTS, MESSAGES]
-COMMENTS = ['Hey {} I have a proposal for you!, could you DM me please?', 'Hi {} I have a proposal for you!, could you DM me please?']
-DMS = ['Hi {}, are you there?', 'Hello {}… do you have a minute?!', 'Good afternoon {}, how are you doing?', '{}, can we talk a moment?', 'Nice to meet you {}, can I talk to you for a minute?', 'How are you {}?' + OPERATOR_NAME + 'here!!'] 
 MIN_POSTS = 10
+CYLCLES = []
+CURRENT_CYCLE = None
+
+class Cycle:
+    def __init__(self, locations, places, hashtags):
+        self.locations = locations
+        self.places = places
+        self.hashtags = hashtags
+
+def create_new_cycle(locations, places, hashtags): #Debe recibir informacions del panel
+    cycle = Cycle(locations, places, hashtags)
+    CYLCLES.append(cycle)
 
 def create_webdriver():
     service = Service(ChromeDriverManager().install())
@@ -47,7 +53,7 @@ def create_webdriver():
 def exit_webdriver():
     DRIVER.quit()
 
-def get_user():
+def get_user(): #Debe recibir informacions del panel
     return ['pipsdevs@gmail.com', 'pipslabteam2023']
 
 def login_user():
@@ -65,21 +71,20 @@ def login_user():
     print('\nSe esta utilizando la cuenta de:', USER[0], '\n\n')
 
 def comment_posts():
-    if len(LOCATIONS) != 0:
-        for location in LOCATIONS:
+    if len(CURRENT_CYCLE.locations) != 0:
+        for location in CURRENT_CYCLE.locations:
             if location[2] > 0:
                 comment_on_location(location)
-    if len(PLACES) != 0:
-        for place in PLACES:
+    if len(CURRENT_CYCLE.places) != 0:
+        for place in CURRENT_CYCLE.places:
             if place[1] > 0:
                 comment_on_place(place)
-    if len(HASHTAGS) != 0:
-        for hashtag in HASHTAGS:
+    if len(CURRENT_CYCLE.hashtags) != 0:
+        for hashtag in CURRENT_CYCLE.hashtags:
             if hashtag[1] > 0:
                 comment_on_hashtag(hashtag)
 
 def comment_on_location(location):
-    wait_for_XPATH("//button[contains(text(),'Save Info')]")
     sleep_random()
     location_address = "https://www.instagram.com/explore/locations/{}/{}/".format(location[1], location[0])
     DRIVER.get(location_address)
@@ -175,7 +180,7 @@ def check_user_meets_criteria():
         return False
     return True
 
-def user_in_db():
+def user_in_db(): #Debe recibir informacions de la base de datos
     return False
 
 def commenting_available():
@@ -202,18 +207,26 @@ def post_is_new():
         return False
     return True
 
-def get_user_posts(): #Se deberia modificar
-    username = (wait_for_XPATH("//div[@class='xt0psk2']//a")).text
-    DRIVER.execute_script("window.open('');")
-    DRIVER.switch_to.window(DRIVER.window_handles[1])
-    location_address = "https://www.instagram.com/{}".format(username)
-    DRIVER.get(location_address)
-    sleep_random()
-    posts = wait_for_CLASS("_ac2a").text
-    sleep_random()
-    DRIVER.close()
-    DRIVER.switch_to.window(DRIVER.window_handles[0])
-    number_of_posts = int(posts.replace(",", ""))
+def get_user_posts():
+    try:
+        user_anchor = (wait_for_XPATH("//div[@class='xt0psk2']//a"))
+        actions = ActionChains(DRIVER)
+        actions.move_to_element(user_anchor).perform()
+        sleep_random()
+        posts = wait_for_XPATH("//div[contains(@class, 'x6s0dn4')]/div/div/span/span").text
+        number_of_posts = int(posts.replace(",", ""))
+    except:
+        username = (wait_for_XPATH("//div[@class='xt0psk2']//a")).text
+        DRIVER.execute_script("window.open('');")
+        DRIVER.switch_to.window(DRIVER.window_handles[1])
+        location_address = "https://www.instagram.com/{}".format(username)
+        DRIVER.get(location_address)
+        sleep_random()
+        posts = wait_for_CLASS("_ac2a").text
+        sleep_random()
+        DRIVER.close()
+        DRIVER.switch_to.window(DRIVER.window_handles[0])
+        number_of_posts = int(posts.replace(",", ""))
     
     return number_of_posts
 
@@ -233,14 +246,17 @@ def leave_comment(username):
     return comment
 
 def pick_comment():
+    with open("data.json") as file:
+        data = json.load(file)
+    comments = [comment["comment"] for comment in data["comments"]]
     global COMMENTS_INDEX
-    comment = COMMENTS[COMMENTS_INDEX]
+    comment = comments[COMMENTS_INDEX]
     COMMENTS_INDEX += 1
-    if COMMENTS_INDEX > len(COMMENTS) - 1:
+    if COMMENTS_INDEX > len(comments) - 1:
         COMMENTS_INDEX = 0
     return comment
         
-def save_contacted_user(username):
+def save_contacted_user(username): #Debe guardar informacion en la base de datos
     print("[+] Usuario guardado en la base de datos\n")
 
 def next_post():
@@ -251,30 +267,30 @@ def next_post():
             break
 
 def send_messages():
-    if len(LOCATIONS) != 0:
-        for location in LOCATIONS:
+    if len(CURRENT_CYCLE.locations) != 0:
+        for location in CURRENT_CYCLE.locations:
             if location[3] > 0:
                 send_message_on_location(location)
-    if len(PLACES) != 0:
-        for place in PLACES:
+    if len(CURRENT_CYCLE.places) != 0:
+        for place in CURRENT_CYCLE.places:
             if place[2] > 0:
                 send_message_on_place(place)
-    if len(HASHTAGS) != 0:
-        for hashtag in HASHTAGS:
+    if len(CURRENT_CYCLE.hashtags) != 0:
+        for hashtag in CURRENT_CYCLE.hashtags:
             if hashtag[2] > 0:
                 send_message_on_hashtag(hashtag)
 
 def send_message_on_location(location):
-    print('[+] Enviando mensajes en', location[0])
+    print('----> Enviando mensajes en', '@' + location[0], '\n')
 
 def send_message_on_place(place):
-    print('[+] Enviando mensajes en', place[0])
+    print('----> Enviando mensajes en', '@' + place[0], '\n')
 
 def send_message_on_hashtag(hashtag):
-    print('[+] Enviando mensajes en', hashtag[0])
+    print('----> Enviando mensajes en', '#' + hashtag[0], '\n')
 
 def sleep_random():
-    sleep(random.uniform(3, 5))
+    sleep(random.uniform(4, 7))
 
 def wait_for_XPATH(xpath):
     while True:
@@ -284,6 +300,7 @@ def wait_for_XPATH(xpath):
         except:
             continue
     return element
+
 def wait_for_CLASS(class_name):
     while True:
         try:
@@ -292,6 +309,7 @@ def wait_for_CLASS(class_name):
         except:
             continue
     return element
+
 def wait_for_NAME(tag_name):
     while True:
         try:
@@ -302,15 +320,25 @@ def wait_for_NAME(tag_name):
     return element
 
 def start_bot():
-
     global DRIVER
     global USER 
 
-    DRIVER = create_webdriver()
-    USER = get_user()
-    login_user()
+    if CURRENT_CYCLE == CYLCLES[0]:
+        DRIVER = create_webdriver()
+        USER = get_user()
+        login_user()
     comment_posts()
     send_messages()
-    exit_webdriver()
+    if CURRENT_CYCLE == CYLCLES[-1]:
+        exit_webdriver()
 
-start_bot()
+### EJECUCION ####
+
+#Los ciclos deben ser creados desde el panel
+create_new_cycle([['miami-beach-florida', '212928653', 2, 1]], [], [])
+create_new_cycle([['manhattan-new-york', '20188833', 2, 1]], [['kikiontheriver', 2, 1]], [['tomorrowland', 2, 1]])
+
+for cycle in CYLCLES:
+    print("#### Iniciando ciclo ####\n")
+    CURRENT_CYCLE = cycle
+    start_bot()

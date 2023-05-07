@@ -1,0 +1,32 @@
+{
+    "comments": [
+        {
+            "comment": "Hey {} I have a proposal for you!, could you DM me please?"
+        },
+        {
+            "comment": "Hi {} I have a proposal for you!, could you DM me please?"
+        }
+    ],
+    "messages": [
+        {
+            "mesagge": "Hi {}, are you there?"
+        },
+        {
+            "mesagge": "Hello {}… do you have a minute?!"
+        },
+        {
+            "mesagge": "Good afternoon {}, how are you doing?"
+        },
+        {
+            "mesagge": "{}, can we talk a moment?"
+        },
+        {
+            "mesagge": "Nice to meet you {}, can I talk to you for a minute?"
+        },
+        {
+            "mesagge": "How are you {}?' + OPERATOR_NAME + 'here!!"
+        }
+    ]
+  }
+  
+  
