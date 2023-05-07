@@ -16,6 +16,7 @@ from time import sleep
 import re
 import random
 from datetime import datetime, timedelta
+import spacy
 
 import tkinter as tk
 from tkinter import filedialog
@@ -85,67 +86,51 @@ def comment_posts():
                 comment_on_hashtag(hashtag)
 
 def comment_on_location(location):
-    sleep_random()
-    location_address = "https://www.instagram.com/explore/locations/{}/{}/".format(location[1], location[0])
-    DRIVER.get(location_address)
-    print('----> Comentando en', '@' + location[0], '\n')
-    sleep_random()
-    first_post = wait_for_CLASS('_aagw')
-    first_post.click()
-    sleep_random()
+    comment_setup("https://www.instagram.com/explore/locations/{}/{}/".format(location[1], location[0]))
     total_comments = 0
+    print('----> Comentando en', '@' + location[0], '\n')
     while total_comments < location[2]:
-        username = get_username()
-        if check_user_meets_criteria():
-            print('[+] Comentandole a:', username)
-            leave_comment(username)
-            save_contacted_user(username)
-            total_comments += 1
-        sleep_random()
+        total_comments += commenting_process()
         if total_comments != location[2]:
             next_post()
 
 def comment_on_place(place):
-    sleep_random()  
-    place_address = "https://www.instagram.com/{}/tagged/".format(place[0])
-    DRIVER.get(place_address)
-    print('----> Comentando en', '@' + place[0], '\n')
-    sleep_random()
-    first_post = wait_for_CLASS('_aagw')
-    first_post.click()
-    sleep_random()
+    comment_setup("https://www.instagram.com/{}/tagged/".format(place[0]))
     total_comments = 0
+    print('----> Comentando en', '@' + place[0], '\n')
     while total_comments < place[1]:
-        username = get_username()
-        if check_user_meets_criteria():
-            print('[+] Comentandole a:', username)
-            leave_comment(username)
-            save_contacted_user(username)
-            total_comments += 1
-        sleep_random()
+        total_comments += commenting_process()
         if total_comments != place[1]:
             next_post()
 
 def comment_on_hashtag(hashtag):
+    comment_setup("https://www.instagram.com/explore/tags/{}/".format(hashtag[0]))
+    print('----> Comentando en', '#' + hashtag[0], '\n')
+    total_comments = 0
+    while total_comments < hashtag[1]:
+        total_comments += commenting_process()
+        if total_comments != hashtag[1]:
+            next_post()
+
+def comment_setup(adress):
     sleep_random()
-    place_address = "https://www.instagram.com/explore/tags/{}/".format(hashtag[0])
+    place_address = adress
     DRIVER.get(place_address)
     sleep_random()
-    print('----> Comentando en', '#' + hashtag[0], '\n')
     first_post = wait_for_CLASS('_aagw')
     first_post.click()
     sleep_random()
-    total_comments = 0
-    while total_comments < hashtag[1]:
-        username = get_username()
-        if check_user_meets_criteria():
-            print('[+] Comentandole a:', username)
-            leave_comment(username)
-            save_contacted_user(username)
-            total_comments += 1
-        sleep_random()
-        if total_comments != hashtag[1]:
-            next_post()
+
+def commenting_process():
+    username = get_username()
+    successfull_comment = 0
+    if check_user_meets_criteria():
+        print('[+] Comentandole a:', username[1])
+        leave_comment(username[0])
+        save_contacted_user(username[1])
+        successfull_comment = 1
+    sleep_random()
+    return successfull_comment
 
 def get_username():
     user_anchor = (wait_for_XPATH("//div[@class='xt0psk2']//a"))
@@ -160,10 +145,16 @@ def get_username():
     first_name = username.split()[0]
     clean_username = re.sub(r'[^a-zA-Z]+', '', first_name).capitalize()
 
-    if clean_username == '':
-        clean_username = user_anchor.text
+    if not is_name(clean_username):
+        clean_username = (user_anchor.text).capitalize()
 
-    return clean_username
+    return [clean_username, user_anchor.text]
+
+def is_name(username):
+    doc_en = nlp_en(username.capitalize())
+    doc_es = nlp_es(username.capitalize())
+
+    return any(token.ent_type_ == "PERSON" for token in doc_en) or any(token.ent_type_ == "PER" for token in doc_es)
 
 def check_user_meets_criteria():
     if user_in_db():
@@ -208,25 +199,12 @@ def post_is_new():
     return True
 
 def get_user_posts():
-    try:
-        user_anchor = (wait_for_XPATH("//div[@class='xt0psk2']//a"))
-        actions = ActionChains(DRIVER)
-        actions.move_to_element(user_anchor).perform()
-        sleep_random()
-        posts = wait_for_XPATH("//div[contains(@class, 'x6s0dn4')]/div/div/span/span").text
-        number_of_posts = int(posts.replace(",", ""))
-    except:
-        username = (wait_for_XPATH("//div[@class='xt0psk2']//a")).text
-        DRIVER.execute_script("window.open('');")
-        DRIVER.switch_to.window(DRIVER.window_handles[1])
-        location_address = "https://www.instagram.com/{}".format(username)
-        DRIVER.get(location_address)
-        sleep_random()
-        posts = wait_for_CLASS("_ac2a").text
-        sleep_random()
-        DRIVER.close()
-        DRIVER.switch_to.window(DRIVER.window_handles[0])
-        number_of_posts = int(posts.replace(",", ""))
+    user_anchor = (wait_for_XPATH("//div[@class='xt0psk2']//a"))
+    actions = ActionChains(DRIVER)
+    actions.move_to_element(user_anchor).perform()
+    sleep_random()
+    posts = wait_for_XPATH("//div[contains(@class, 'x6s0dn4') and contains(@class, 'xrvj5dj')]/div/div/span/span").text
+    number_of_posts = int(posts.replace(",", ""))
     
     return number_of_posts
 
@@ -257,7 +235,7 @@ def pick_comment():
     return comment
         
 def save_contacted_user(username): #Debe guardar informacion en la base de datos
-    print("[+] Usuario guardado en la base de datos\n")
+    print("[+]", username,"guardado en la base de datos\n")
 
 def next_post():
     svg_elements = DRIVER.find_elements(By.TAG_NAME, "svg")
@@ -336,7 +314,10 @@ def start_bot():
 
 #Los ciclos deben ser creados desde el panel
 create_new_cycle([['miami-beach-florida', '212928653', 2, 1]], [], [])
-create_new_cycle([['manhattan-new-york', '20188833', 2, 1]], [['kikiontheriver', 2, 1]], [['tomorrowland', 2, 1]])
+create_new_cycle([], [['kikiontheriver', 2, 1]], [['tomorrowland', 2, 1]])
+
+nlp_en = spacy.load('en_core_web_sm')
+nlp_es = spacy.load('es_core_news_sm')
 
 for cycle in CYLCLES:
     print("#### Iniciando ciclo ####\n")
