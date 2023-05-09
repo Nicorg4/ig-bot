@@ -1,3 +1,12 @@
+from time import sleep
+from datetime import datetime, timedelta
+from collections import deque
+import json
+import pyautogui
+import os
+import re
+import random
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -8,26 +17,23 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 
-import json
-import pyautogui
-import datetime
-import os
-from time import sleep
-import re
-import random
-from datetime import datetime, timedelta
 import spacy
 
 import tkinter as tk
 from tkinter import filedialog
 
+import firebase_admin
+from firebase_admin import credentials, firestore
+
 DRIVER = None
 USER = None
 COMMENTS_INDEX = 0
+MESSAGES_INDEX = 0
 OPERATOR_NAME = 'Nicolas'
 MIN_POSTS = 10
 CYLCLES = []
 CURRENT_CYCLE = None
+USERS_TO_DM = deque()
 
 class Cycle:
     def __init__(self, locations, places, hashtags):
@@ -61,61 +67,68 @@ def login_user():
     username_input = wait_for_XPATH('//*[@id="loginForm"]/div/div[1]/div/label/input')
     password_input = wait_for_XPATH('//*[@id="loginForm"]/div/div[2]/div/label/input')
 
+    sleep_random()
+
     username_input.send_keys(USER[0])
+
+    sleep_random()
+
     password_input.send_keys(USER[1])
+
+    sleep_random()
 
     login_button = wait_for_XPATH('//*[@id="loginForm"]/div/div[3]/button')
     login_button.click()
 
     sleep_random()
 
-    print('\nSe esta utilizando la cuenta de:', USER[0], '\n\n')
+    print('Se esta utilizando la cuenta de:', USER[0], '\n\n')
 
 def comment_posts():
     if len(CURRENT_CYCLE.locations) != 0:
         for location in CURRENT_CYCLE.locations:
-            if location[2] > 0:
-                comment_on_location(location)
+            comment_on_location(location)
     if len(CURRENT_CYCLE.places) != 0:
         for place in CURRENT_CYCLE.places:
-            if place[1] > 0:
-                comment_on_place(place)
+            comment_on_place(place)
     if len(CURRENT_CYCLE.hashtags) != 0:
         for hashtag in CURRENT_CYCLE.hashtags:
-            if hashtag[1] > 0:
-                comment_on_hashtag(hashtag)
+            comment_on_hashtag(hashtag)
 
 def comment_on_location(location):
-    comment_setup("https://www.instagram.com/explore/locations/{}/{}/".format(location[1], location[0]))
+    comment_setup("https://www.instagram.com/explore/locations/{}/{}/".format(location[0][1], location[0][0]), location[0][0])
     total_comments = 0
-    print('----> Comentando en', '@' + location[0], '\n')
-    while total_comments < location[2]:
+    while total_comments < location[1]:
         total_comments += commenting_process()
-        if total_comments != location[2]:
+        if total_comments != location[1]:
             next_post()
+    collect_users_to_dm(location)
 
 def comment_on_place(place):
-    comment_setup("https://www.instagram.com/{}/tagged/".format(place[0]))
+    comment_setup("https://www.instagram.com/{}/tagged/".format(place[0]), place[0])
     total_comments = 0
-    print('----> Comentando en', '@' + place[0], '\n')
     while total_comments < place[1]:
         total_comments += commenting_process()
         if total_comments != place[1]:
             next_post()
+    collect_users_to_dm(place)
 
 def comment_on_hashtag(hashtag):
-    comment_setup("https://www.instagram.com/explore/tags/{}/".format(hashtag[0]))
-    print('----> Comentando en', '#' + hashtag[0], '\n')
+    comment_setup("https://www.instagram.com/explore/tags/{}/".format(hashtag[0]), hashtag[0])
     total_comments = 0
     while total_comments < hashtag[1]:
         total_comments += commenting_process()
         if total_comments != hashtag[1]:
             next_post()
+    collect_users_to_dm(hashtag)
 
-def comment_setup(adress):
+def comment_setup(adress, name):
     sleep_random()
     place_address = adress
     DRIVER.get(place_address)
+    print('-------------------------------------\n')
+    print('Comentando en', '#' + name, '\n')
+    print('-------------------------------------\n')
     sleep_random()
     first_post = wait_for_CLASS('_aagw')
     first_post.click()
@@ -124,10 +137,10 @@ def comment_setup(adress):
 def commenting_process():
     username = get_username()
     successfull_comment = 0
-    if check_user_meets_criteria():
-        print('[+] Comentandole a:', username[1])
+    print('[+] Comentandole a', username[1])
+    if check_user_meets_criteria(username[1]):
         leave_comment(username[0])
-        save_contacted_user(username[1])
+        save_contacted_user(username[1], 'Comment')
         successfull_comment = 1
     sleep_random()
     return successfull_comment
@@ -156,8 +169,8 @@ def is_name(username):
 
     return any(token.ent_type_ == "PERSON" for token in doc_en) or any(token.ent_type_ == "PER" for token in doc_es)
 
-def check_user_meets_criteria():
-    if user_in_db():
+def check_user_meets_criteria(username):
+    if user_in_db(username):
         print('[-] El usuario ya esta en la base de datos\n')
         return False
     if not commenting_available():
@@ -171,7 +184,15 @@ def check_user_meets_criteria():
         return False
     return True
 
-def user_in_db(): #Debe recibir informacions de la base de datos
+def user_in_db(username):
+    # contacted_users_ref = db.collection('contacted_users')
+    # query = contacted_users_ref.where('username', '==', username).limit(1).get()
+
+    # if len(query) > 0:
+    #     return True
+    # else:
+    #     return False
+    
     return False
 
 def commenting_available():
@@ -204,12 +225,16 @@ def get_user_posts():
     actions.move_to_element(user_anchor).perform()
     sleep_random()
     posts = wait_for_XPATH("//div[contains(@class, 'x6s0dn4') and contains(@class, 'xrvj5dj')]/div/div/span/span").text
-    number_of_posts = int(posts.replace(",", ""))
+    try:
+        number_of_posts = int(posts.replace(",", ""))
+    except:
+        if 'K' in posts:
+           number_of_posts = int(posts.replace("K", ""))
+           number_of_posts = number_of_posts*1000
     
     return number_of_posts
 
 def leave_comment(username):
-
     comment_textarea = wait_for_NAME("textarea")
     comment_textarea.click()
     updated_textarea = wait_for_NAME("textarea")
@@ -234,7 +259,15 @@ def pick_comment():
         COMMENTS_INDEX = 0
     return comment
         
-def save_contacted_user(username): #Debe guardar informacion en la base de datos
+def save_contacted_user(username, method):
+    # contacted_users_ref = db.collection('contacted_users')
+    # new_doc_ref = collection_ref.document()
+    # new_doc_ref.set({
+    #     'username': username,
+    #     'contacted_by': method,
+    #     'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # })
+
     print("[+]", username,"guardado en la base de datos\n")
 
 def next_post():
@@ -244,31 +277,74 @@ def next_post():
             svg.click()
             break
 
+def collect_users_to_dm(destination):
+    global USERS_TO_DM
+    next_post()
+    number_of_messages = destination[2]
+    while number_of_messages != 0:
+        current_user = get_username()
+        if not user_in_db(current_user[1]):
+            USERS_TO_DM.append(current_user)
+            number_of_messages -= 1
+        sleep_random()
+        next_post()
+
 def send_messages():
-    if len(CURRENT_CYCLE.locations) != 0:
-        for location in CURRENT_CYCLE.locations:
-            if location[3] > 0:
-                send_message_on_location(location)
-    if len(CURRENT_CYCLE.places) != 0:
-        for place in CURRENT_CYCLE.places:
-            if place[2] > 0:
-                send_message_on_place(place)
-    if len(CURRENT_CYCLE.hashtags) != 0:
-        for hashtag in CURRENT_CYCLE.hashtags:
-            if hashtag[2] > 0:
-                send_message_on_hashtag(hashtag)
+    while USERS_TO_DM:
+        visit_profile(USERS_TO_DM[0][1])
+        sleep_random()
+        send_message(USERS_TO_DM[0][0])
+        USERS_TO_DM.popleft()
 
-def send_message_on_location(location):
-    print('----> Enviando mensajes en', '@' + location[0], '\n')
+def visit_profile(username):
+    location_address = "https://www.instagram.com/{}".format(username)
+    sleep_random()
+    DRIVER.get(location_address)
+    print('[+] Enviandole mensaje a', username)
 
-def send_message_on_place(place):
-    print('----> Enviando mensajes en', '@' + place[0], '\n')
+def send_message(username):
+    try:
+        message_button = DRIVER.find_element(By.CSS_SELECTOR, "div.x1i10hfl[role='button']")        
+        message_button.click()
+        sleep_random()
+    except:
+        print("[-] El usuario", username, 'no puede recibir mensajes \n')
+        return False
 
-def send_message_on_hashtag(hashtag):
-    print('----> Enviando mensajes en', '#' + hashtag[0], '\n')
+    try:
+        not_now_button = WebDriverWait(DRIVER, 5).until(EC.presence_of_element_located((By.XPATH, "//button[text()='Not Now']")))
+        not_now_button.click()
+    except:
+        pass
+    
+    try:
+        sleep_random()
+        message_textarea = DRIVER.find_element(By.TAG_NAME, "textarea")
+        message = pick_message().format(username)
+        sleep_random()
+        message_textarea.send_keys(message)
+        sleep_random()
+        #pyautogui.press('enter')
+        save_contacted_user(username, 'DM')
+    except:
+        print('[-] El usuario', username, 'tiene la cuenta privada', '\n')
+        return False
+    return True
+
+def pick_message():
+    with open("data.json") as file:
+        data = json.load(file)
+    messages = [message["message"] for message in data["messages"]]
+    global MESSAGES_INDEX
+    message = messages[MESSAGES_INDEX]
+    MESSAGES_INDEX += 1
+    if MESSAGES_INDEX > len(messages) - 1:
+        MESSAGES_INDEX = 0
+    return message
+
 
 def sleep_random():
-    sleep(random.uniform(4, 7))
+    sleep(random.uniform(3, 5))
 
 def wait_for_XPATH(xpath):
     while True:
@@ -312,14 +388,26 @@ def start_bot():
 
 ### EJECUCION ####
 
+#Inicializacion de la base de datos
+# cred = credentials.Certificate('ruta/al/archivo.json')
+# firebase_admin.initialize_app(cred)
+# db = firestore.client()
+
 #Los ciclos deben ser creados desde el panel
-create_new_cycle([['miami-beach-florida', '212928653', 2, 1]], [], [])
-create_new_cycle([], [['kikiontheriver', 2, 1]], [['tomorrowland', 2, 1]])
+create_new_cycle([[['miami-beach-florida', '212928653'], 0, 3]], [], [])
+create_new_cycle([], [['kikiontheriver', 0, 3]], [['tomorrowland', 5, 3]])
 
 nlp_en = spacy.load('en_core_web_sm')
 nlp_es = spacy.load('es_core_news_sm')
 
+start_time = datetime.now()
+
 for cycle in CYLCLES:
-    print("#### Iniciando ciclo ####\n")
+    print("\n#### Iniciando ciclo ####\n")
     CURRENT_CYCLE = cycle
     start_bot()
+
+end_time = datetime.now()
+
+print('\nDuracion de la ejecucion:', end_time - start_time)
+

@@ -9,22 +9,22 @@
     ],
     "messages": [
         {
-            "mesagge": "Hi {}, are you there?"
+            "message": "Hi {}, are you there?"
         },
         {
-            "mesagge": "Hello {}… do you have a minute?!"
+            "message": "Hello {}… do you have a minute?!"
         },
         {
-            "mesagge": "Good afternoon {}, how are you doing?"
+            "message": "Good afternoon {}, how are you doing?"
         },
         {
-            "mesagge": "{}, can we talk a moment?"
+            "message": "{}, can we talk a moment?"
         },
         {
-            "mesagge": "Nice to meet you {}, can I talk to you for a minute?"
+            "message": "Nice to meet you {}, can I talk to you for a minute?"
         },
         {
-            "mesagge": "How are you {}?' + OPERATOR_NAME + 'here!!"
+            "message": "How are you {}?' + OPERATOR_NAME + 'here!!"
         }
     ]
   }
