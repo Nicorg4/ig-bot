@@ -3,7 +3,7 @@ from instagram_bot import *
 
 app = Flask(__name__)
 
-@app.route('/', methods=['GET'])
+@app.route('/start_cycle', methods=['GET'])
 def home_page():
     start_bot()
     return Response("{'a':'b'}", status=200, mimetype='application/json')

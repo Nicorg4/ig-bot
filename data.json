@@ -12,7 +12,7 @@
             "message": "Hi {}, are you there?"
         },
         {
-            "message": "Hello {}… do you have a minute?!"
+            "message": "Hello {}, do you have a minute?!"
         },
         {
             "message": "Good afternoon {}, how are you doing?"
@@ -24,7 +24,7 @@
             "message": "Nice to meet you {}, can I talk to you for a minute?"
         },
         {
-            "message": "How are you {}?' + OPERATOR_NAME + 'here!!"
+            "message": "How are you {}? {} here!!"
         }
     ]
   }
