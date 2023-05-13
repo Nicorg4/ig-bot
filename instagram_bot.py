@@ -82,8 +82,8 @@ def get_admin_user():
     return ['pipsdevs@gmail.com', 'pipslabteam2023']
 
 def login_user():
-    username_input = wait_for_XPATH('//*[@id="loginForm"]/div/div[1]/div/label/input')
-    password_input = wait_for_XPATH('//*[@id="loginForm"]/div/div[2]/div/label/input')
+    username_input = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
+    password_input = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input')
 
     sleep_random()
 
@@ -95,7 +95,7 @@ def login_user():
 
     sleep_random()
 
-    login_button = wait_for_XPATH('//*[@id="loginForm"]/div/div[3]/button')
+    login_button = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[3]/button')
     login_button.click()
 
     sleep_random()
@@ -148,7 +148,7 @@ def comment_setup(adress, name):
     print('Comentando en', '#' + name, '\n')
     print('-------------------------------------\n')
     sleep_random()
-    first_post = wait_for_CLASS('_aagw')
+    first_post = wait_for_element(By.CLASS_NAME, '_aagw')
     first_post.click()
     sleep_random()
 
@@ -164,7 +164,7 @@ def commenting_process():
     return successfull_comment
 
 def get_username():
-    user_anchor = (wait_for_XPATH("//div[@class='xt0psk2']//a"))
+    user_anchor = wait_for_element(By.XPATH, "//div[@class='xt0psk2']//a")
     username_from_anchor = user_anchor.text
     actions = ActionChains(DRIVER)
     actions.move_to_element(user_anchor).perform()
@@ -229,7 +229,7 @@ def check_user_uploads_enough():
     return False
 
 def post_is_new():
-    post_date = wait_for_CLASS('_aaqe').get_attribute("datetime")
+    post_date = wait_for_element(By.CLASS_NAME, '_aaqe').get_attribute("datetime")
     date_now = datetime.now()
     clean_post_date = datetime.strptime(post_date, "%Y-%m-%dT%H:%M:%S.%fZ")
     a_week_from_now = date_now - timedelta(days=7)
@@ -239,11 +239,11 @@ def post_is_new():
     return True
 
 def get_user_posts():
-    user_anchor = (wait_for_XPATH("//div[@class='xt0psk2']//a"))
+    user_anchor = wait_for_element(By.XPATH, "//div[@class='xt0psk2']//a")
     actions = ActionChains(DRIVER)
     actions.move_to_element(user_anchor).perform()
     sleep_random()
-    posts = wait_for_XPATH("//div[contains(@class, 'x6s0dn4') and contains(@class, 'xrvj5dj')]/div/div/span/span").text
+    posts = wait_for_element(By.XPATH, "//div[contains(@class, 'x6s0dn4') and contains(@class, 'xrvj5dj')]/div/div/span/span").text
     try:
         number_of_posts = int(posts.replace(",", ""))
     except:
@@ -254,14 +254,17 @@ def get_user_posts():
     return number_of_posts
 
 def leave_comment(username):
-    comment_textarea = wait_for_NAME("textarea")
+    comment_textarea = wait_for_element(By.TAG_NAME, "textarea")
     comment_textarea.click()
-    updated_textarea = wait_for_NAME("textarea")
+    updated_textarea = wait_for_element(By.TAG_NAME, "textarea")
     comment = pick_comment().format(username)
     sleep_random()
-    updated_textarea.send_keys(comment)
 
-    post_button = wait_for_XPATH("//div[contains(text(),'Post')]")
+    for s in comment:
+        updated_textarea.send_keys(s)
+        sleep(random.uniform(0.005, 0.02))
+
+    post_button = wait_for_element(By.XPATH, "//div[contains(text(),'Post')]")
     sleep_random()
     #post_button.click()
     
@@ -286,6 +289,13 @@ def save_contacted_user(username, method):
     #     'contacted_by': method,
     #     'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # })
+
+    with open('contacted_users.txt', 'a+') as f:
+        if f.tell() == 0:
+            f.write('{:30}'.format('Nombre de usuario') + '|' + "{:5}".format('Metodo de contacto') +' \n')
+            f.write('=========================================================')
+        f.write("{:30}".format(username) + "{:5}".format('|') + method + '\n')
+    f.close()
 
     print("[+]", username,"guardado en la base de datos\n")
 
@@ -341,7 +351,11 @@ def send_message(username):
         message_textarea = DRIVER.find_element(By.TAG_NAME, "textarea")
         message = pick_message().format(username[0], OPERATOR_NAME)
         sleep_random()
-        message_textarea.send_keys(message)
+
+        for s in message:
+            message_textarea.send_keys(s)
+            sleep(random.uniform(0.005, 0.02))
+
         sleep_random()
         #pyautogui.press('enter')
         save_contacted_user(username[1], 'DM')
@@ -361,32 +375,13 @@ def pick_message():
         MESSAGES_INDEX = 0
     return message
 
-
 def sleep_random():
     sleep(random.uniform(3, 5))
 
-def wait_for_XPATH(xpath):
+def wait_for_element(method, tag):
     while True:
         try:
-            element = WebDriverWait(DRIVER, 10).until(EC.presence_of_element_located((By.XPATH, xpath)))
-            break
-        except:
-            continue
-    return element
-
-def wait_for_CLASS(class_name):
-    while True:
-        try:
-            element = WebDriverWait(DRIVER, 10).until(EC.presence_of_element_located((By.CLASS_NAME, class_name)))
-            break
-        except:
-            continue
-    return element
-
-def wait_for_NAME(tag_name):
-    while True:
-        try:
-            element = WebDriverWait(DRIVER, 10).until(EC.presence_of_element_located((By.TAG_NAME, tag_name)))
+            element = WebDriverWait(DRIVER, 10).until(EC.presence_of_element_located((method, tag)))
             break
         except:
             continue
@@ -416,13 +411,13 @@ locations = []
 places = []
 hashtags = []
 
-location1 = Location('miami-beach-florida', '212928653', 2, 2)
+location1 = Location('miami-beach-florida', '212928653', 5, 2)
 locations.append(location1)
 
-place1 = Place('kikiontheriver', 2, 5)
+place1 = Place('kikiontheriver', 7, 2)
 places.append(place1)
 
-hashtag1 = Hashtag('tomorrowland', 2, 2)
+hashtag1 = Hashtag('tomorrowland', 8, 2)
 hashtags.append(hashtag1)
 
 create_new_cycle(locations, places, hashtags)
