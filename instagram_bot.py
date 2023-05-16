@@ -1,3 +1,12 @@
+from time import sleep
+from datetime import datetime, timedelta
+from collections import deque
+import json
+import pyautogui
+import os
+import re
+import random
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -5,88 +14,290 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-
+from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 
-import json
-import pyautogui
-import datetime
-from time import sleep
-import os
+import spacy
 
 import tkinter as tk
 from tkinter import filedialog
 
-CONTACTED_USERS = []
-CURRENT_USER = []
-DMS = 3
-COMMENTS = 5
+import firebase_admin
+from firebase_admin import credentials, firestore
+
 DRIVER = None
+USER = None
+COMMENTS_INDEX = 0
+MESSAGES_INDEX = 0
+OPERATOR_NAME = 'Nicolas'
+MIN_POSTS = 10
+CYLCLES = []
+CURRENT_CYCLE = None
+
+class Cycle:
+    def __init__(self, locations, places, hashtags):
+        self.locations = locations
+        self.places = places
+        self.hashtags = hashtags
+
+class Location:
+    def __init__(self, location_name, location_id, number_of_comments, number_of_messages):
+        self.location_name = location_name
+        self.location_id = location_id
+        self.number_of_comments = number_of_comments
+        self.number_of_messages = number_of_messages
+
+class Place:
+    def __init__(self, place_name, number_of_comments, number_of_messages):
+        self.place_name = place_name
+        self.number_of_comments = number_of_comments
+        self.number_of_messages = number_of_messages
+
+class Hashtag:
+    def __init__(self, hashtag_name, number_of_comments, number_of_messages):
+        self.hashtag_name = hashtag_name
+        self.number_of_comments = number_of_comments
+        self.number_of_messages = number_of_messages
+
+def create_new_cycle(locations, places, hashtags):
+    cycle = Cycle(locations, places, hashtags)
+    CYLCLES.append(cycle)
 
 def create_webdriver():
-
-    # Creacion del webdriver
     service = Service(ChromeDriverManager().install())
     options = webdriver.ChromeOptions()
-    options.add_experimental_option('excludeSwitches', ['enable-logging']) # Saca los warnings no se por que
-    #options.add_experimental_option("detach", True) # Previene que el chrome se cierre cuando se terminen las tareas (No recomendado)
-    options.binary_location = 'C:\Program Files\Google\Chrome\Application\chrome.exe' #Direccion del navegador C:\Program Files\Google\Chrome\Application\chrome.exe
+    options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    options.add_experimental_option("detach", True) # Previene que el chrome se cierre cuando se terminen las tareas (No recomendado)
+    options.binary_location = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
     options.add_argument("--incognito")
     driver = webdriver.Chrome(service=service, options=options)
+    driver.get("https://www.instagram.com")
 
     return driver
 
-def get_website():
-    # Ingresar a la pagina solicitada
-    DRIVER.get("https://www.instagram.com")
+def exit_webdriver():
+    DRIVER.quit()
+
+def get_admin_user():
+    return ['pipsdevs@gmail.com', 'pipslabteam2023']
 
 def login_user():
-    # Buscar los inputs del form de login
-    username_input = wait_for_XPATH('//*[@id="loginForm"]/div/div[1]/div/label/input')
-    password_input = wait_for_XPATH('//*[@id="loginForm"]/div/div[2]/div/label/input')
+    username_input = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
+    password_input = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input')
 
-    # Insertar las credenciales en los inputs
-    username_input.send_keys(CURRENT_USER[0])
-    password_input.send_keys(CURRENT_USER[1])
+    sleep_random()
 
-    # Buscar y clickear el boton de login
-    login_button = wait_for_XPATH('//*[@id="loginForm"]/div/div[3]/button')
+    username_input.send_keys(USER[0])
+
+    sleep_random()
+
+    password_input.send_keys(USER[1])
+
+    sleep_random()
+
+    login_button = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[3]/button')
     login_button.click()
 
-    sleep(3)
+    sleep_random()
 
-    print('\nSe esta utilizando la cuenta de: ', CURRENT_USER[0])
+    print('Se esta utilizando la cuenta de:', USER[0], '\n')
 
-def get_location_page():
-    # Acceder a la pagina del lugar
-    wait_for_XPATH("//button[contains(text(),'Save Info')]")
-    location_address = "https://www.instagram.com/explore/locations/{}/{}/".format(CURRENT_USER[3], CURRENT_USER[2])
-    DRIVER.get(location_address)
+def contact_users():
+    if len(CURRENT_CYCLE.locations) != 0:
+        for location in CURRENT_CYCLE.locations:
+            comment_on_location(location)
+            send_messages(location)
+    if len(CURRENT_CYCLE.places) != 0:
+        for place in CURRENT_CYCLE.places:
+            comment_on_place(place)
+            send_messages(place)
+    if len(CURRENT_CYCLE.hashtags) != 0:
+        for hashtag in CURRENT_CYCLE.hashtags:
+            comment_on_hashtag(hashtag)
+            send_messages(hashtag)
 
-def click_on_post():
-    # Ingresar al primer post
-    first_post = wait_for_CLASS('_aagw')
-    first_post.click()
-
-def comment_posts():
-    i = 0
-    while i < COMMENTS:
-        current_username = (wait_for_XPATH("//div[@class='xt0psk2']//a")).text
-        print('Buscando a', current_username, 'en la base de datos')
-        if check_user_in_db(current_username) or check_user_contacted(current_username):
-            print('El usuario ya fue contactado anteriormente')
+def comment_on_location(location):
+    comment_setup("https://www.instagram.com/explore/locations/{}/{}/".format(location.location_id, location.location_name), location.location_name)
+    total_comments = 0
+    while total_comments < location.number_of_comments:
+        total_comments += commenting_process()
+        if total_comments != location.number_of_comments:
             next_post()
-        else:
-            print('El usuario no esta registrado, se le enviara un comentario')
-            comment_sent = leave_a_comment(current_username)
-            if comment_sent == None:
-                print('No se puede enviar el comentario')
-                next_post()
-            else:
-                save_owner_username(current_username)
-                if i != COMMENTS - 1:
-                    next_post()
-                i += 1
+
+def comment_on_place(place):
+    comment_setup("https://www.instagram.com/{}/tagged/".format(place.place_name), place.place_name)
+    total_comments = 0
+    while total_comments < place.number_of_comments:
+        total_comments += commenting_process()
+        if total_comments != place.number_of_comments:
+            next_post()
+
+def comment_on_hashtag(hashtag):
+    comment_setup("https://www.instagram.com/explore/tags/{}/".format(hashtag.hashtag_name), hashtag.hashtag_name)
+    total_comments = 0
+    while total_comments < hashtag.number_of_comments:
+        total_comments += commenting_process()
+        if total_comments != hashtag.number_of_comments:
+            next_post()
+
+def comment_setup(adress, name):
+    sleep_random()
+    place_address = adress
+    DRIVER.get(place_address)
+    print('-------------------------------------\n')
+    print('Comentando en', '#' + name, '\n')
+    print('-------------------------------------\n')
+    sleep_random()
+    first_post = wait_for_element(By.CLASS_NAME, '_aagw')
+    first_post.click()
+    sleep_random()
+
+def commenting_process():
+    username = get_username()
+    successfull_comment = 0
+    print('[+] Comentandole a', username[1])
+    if check_user_meets_criteria(username[1]):
+        leave_comment(username[0])
+        save_contacted_user(username[1], 'Comment')
+        successfull_comment = 1
+    sleep_random()
+    return successfull_comment
+
+def get_username():
+    user_anchor = wait_for_element(By.XPATH, "//div[@class='xt0psk2']//a")
+    username_from_anchor = user_anchor.text
+    actions = ActionChains(DRIVER)
+    actions.move_to_element(user_anchor).perform()
+    sleep_random()
+    try:
+        username = DRIVER.find_element(By.XPATH, "//div[@class='xmix8c7 x1gslohp x1rva8in']//span").text
+    except:
+        username = username_from_anchor
+
+    first_name = username.split()[0]
+    clean_username = re.sub(r'[^a-zA-Z]+', '', first_name).capitalize()
+
+    if not is_name(clean_username):
+        clean_username = (user_anchor.text).capitalize()
+    
+    return [clean_username, username_from_anchor]
+
+def is_name(username):
+    doc_en = nlp_en(username.capitalize())
+    doc_es = nlp_es(username.capitalize())
+
+    return any(token.ent_type_ == "PERSON" for token in doc_en) or any(token.ent_type_ == "PER" for token in doc_es)
+
+def check_user_meets_criteria(username):
+    if user_in_db(username):
+        print('[-] El usuario ya esta en la base de datos\n')
+        return False
+    if not commenting_available():
+        print('[-] El usuario no puede recibir comentarios\n')
+        return False
+    if not post_is_new():
+        print('[-] El post es demasiado antiguo\n')
+        return False
+    if not check_user_uploads_enough():
+        print('[-] El usuario no tiene los posts suficientes\n')
+        return False
+    return True
+
+def user_in_db(username):
+    # contacted_users_ref = db.collection('contacted_users')
+    # query = contacted_users_ref.where('username', '==', username).limit(1).get()
+
+    # if len(query) > 0:
+    #     return True
+    # else:
+    #     return False
+    
+    return False
+
+def commenting_available():
+    try:
+        DRIVER.find_element(By.XPATH, "//span[text()='Comments on this post have been limited.']")
+        return False
+    except:
+        return True
+    
+def check_user_uploads_enough(): 
+    number_of_posts = get_user_posts()
+
+    if number_of_posts > MIN_POSTS:
+        return True
+    return False
+
+def post_is_new():
+    post_date = wait_for_element(By.CLASS_NAME, '_aaqe').get_attribute("datetime")
+    date_now = datetime.now()
+    clean_post_date = datetime.strptime(post_date, "%Y-%m-%dT%H:%M:%S.%fZ")
+    a_week_from_now = date_now - timedelta(days=7)
+
+    if clean_post_date < a_week_from_now:
+        return False
+    return True
+
+def get_user_posts():
+    user_anchor = wait_for_element(By.XPATH, "//div[@class='xt0psk2']//a")
+    actions = ActionChains(DRIVER)
+    actions.move_to_element(user_anchor).perform()
+    sleep_random()
+    posts = wait_for_element(By.XPATH, "//div[contains(@class, 'x6s0dn4') and contains(@class, 'xrvj5dj')]/div/div/span/span").text
+    try:
+        number_of_posts = int(posts.replace(",", ""))
+    except:
+        if 'K' in posts:
+           number_of_posts = int(posts.replace("K", ""))
+           number_of_posts = number_of_posts*1000
+    
+    return number_of_posts
+
+def leave_comment(username):
+    comment_textarea = wait_for_element(By.TAG_NAME, "textarea")
+    comment_textarea.click()
+    updated_textarea = wait_for_element(By.TAG_NAME, "textarea")
+    comment = pick_comment().format(username)
+    sleep_random()
+
+    for s in comment:
+        updated_textarea.send_keys(s)
+        sleep(random.uniform(0.005, 0.02))
+
+    post_button = wait_for_element(By.XPATH, "//div[contains(text(),'Post')]")
+    sleep_random()
+    #post_button.click()
+    
+    return comment
+
+def pick_comment():
+    with open("data.json") as file:
+        data = json.load(file)
+    comments = [comment["comment"] for comment in data["comments"]]
+    global COMMENTS_INDEX
+    comment = comments[COMMENTS_INDEX]
+    COMMENTS_INDEX += 1
+    if COMMENTS_INDEX > len(comments) - 1:
+        COMMENTS_INDEX = 0
+    return comment
+        
+def save_contacted_user(username, method):
+    # contacted_users_ref = db.collection('contacted_users')
+    # new_doc_ref = collection_ref.document()
+    # new_doc_ref.set({
+    #     'username': username,
+    #     'contacted_by': method,
+    #     'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # })
+
+    with open('contacted_users.txt', 'a+') as f:
+        if f.tell() == 0:
+            f.write('{:30}'.format('Nombre de usuario') + '|' + "{:5}".format('Metodo de contacto') +' \n')
+            f.write('=========================================================')
+        f.write("{:30}".format(username) + "{:5}".format('|') + method + '\n')
+    f.close()
+
+    print("[+]", username,"guardado en la base de datos\n")
 
 def next_post():
     svg_elements = DRIVER.find_elements(By.TAG_NAME, "svg")
@@ -95,270 +306,159 @@ def next_post():
             svg.click()
             break
 
-def leave_a_comment(username):
-    try:
-        comment_textarea = DRIVER.find_element(By.TAG_NAME, "textarea")
-        comment = 'Hey {} I have a proposal for you, could you dm me please?'.format(username)
-        comment_textarea.click()
-        updated_textarea = DRIVER.find_element(By.TAG_NAME, "textarea")
-        updated_textarea.send_keys(comment)
-    except:
-        return None
+def send_messages(destination):
+    next_post()
+    number_of_messages = 0
+    main_window_handle = DRIVER.current_window_handle
+    while number_of_messages < destination.number_of_messages:
+        username = get_username()
+        if not user_in_db(username[1]):
+            visit_profile(username[1])
+            sleep_random()
+            message_success = send_message(username)
+            if message_success:
+                number_of_messages += 1
+            DRIVER.close()
+            DRIVER.switch_to.window(main_window_handle)
+            sleep_random()
+            next_post()
 
-    post_button = wait_for_XPATH("//div[contains(text(),'Post')]")
-    #post_button.click()
-    #sleep(2)
-    print("Se realizo un comentario con exito a:", username)
-
-    return comment
-
-def save_owner_username(current_username):
-    if current_username not in CONTACTED_USERS:
-        CONTACTED_USERS.append(current_username)
-    else:
-        print('El usuario ya fue contactado anteriormente')
-        
-def contact_users():
-    write_users_on_db()
-    visit_profile()
-
-def visit_profile():
-    i = 0
-    try:
-        while i < DMS:
-            username = CONTACTED_USERS[i]
-            location_address = "https://www.instagram.com/{}".format(username)
-            DRIVER.get(location_address)
-            if check_user_messaged(username):
-                print('Ya se le envio un mensaje a este usuario')
-            else:
-                message_info = send_message(username)
-                message= message_info[0]
-                reason= message_info[1]
-                if message == None:
-                    CONTACTED_USERS.remove(username)
-                    register_failed_message(username, reason)
-                else:
-                    register_message(username, message, CURRENT_USER)
-                    print("Mensaje enviado exitosamente a:", username)
-                    i = i + 1 
-    except:
-        return print('No hay mas usuarios para contactar')
+def visit_profile(username):
+    location_address = "https://www.instagram.com/{}".format(username)
+    sleep_random()
+    DRIVER.execute_script("window.open(arguments[0]);", location_address)
+    new_window_handle = DRIVER.window_handles[-1]
+    DRIVER.switch_to.window(new_window_handle)
+    print('[+] Enviandole mensaje a', username)
 
 def send_message(username):
-    message_button = message_button_missing_handler("div.x1i10hfl[role='button']")
-    reason = ''
-    if message_button == None:
-        reason = 'El usuario no puede recibir mensajes'
-        print('El usuario no puede recibir mensajes')
-        return [None, reason]
-    message_button.click()
-
-    sleep(3)
+    try:
+        message_button = DRIVER.find_element(By.CSS_SELECTOR, "div.x1i10hfl[role='button']")        
+        message_button.click()
+        sleep_random()
+    except:
+        print("[-] El usuario", username[1], 'no puede recibir mensajes \n')
+        return False
 
     try:
-        not_now_button = DRIVER.find_element(By.XPATH, "//button[text()='Not Now']")
+        not_now_button = WebDriverWait(DRIVER, 5).until(EC.presence_of_element_located((By.XPATH, "//button[text()='Not Now']")))
         not_now_button.click()
     except:
         pass
     
-    sleep(3)
-
     try:
+        sleep_random()
         message_textarea = DRIVER.find_element(By.TAG_NAME, "textarea")
-        message = 'Hey {}, do you have a minute?'.format(username)
-        message_textarea.send_keys(message)
-    except NoSuchElementException:
-        message = None
-        reason = 'El usuario tiene la cuenta privada'
-        print('El usuario tiene la cuenta privada')
+        message = pick_message().format(username[0], OPERATOR_NAME)
+        sleep_random()
 
-    #sleep(2)
-    #pyautogui.press('enter')
-    #sleep(1)
+        for s in message:
+            message_textarea.send_keys(s)
+            sleep(random.uniform(0.005, 0.02))
 
-    return [message, reason]
-
-def register_message(user, message, CURRENT_USER):
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    if os.path.exists("message_register.json"):
-        # Abrir el archivo JSON en modo de lectura
-        with open("message_register.json", "r") as file:
-            message_register = json.load(file)
-    else:
-        # Si el archivo no existe, crear una lista vacía
-        message_register = []
-
-    # Crear un nuevo message_dict y agregarlo a la lista de mensajes
-    new_message_dict = {"From": CURRENT_USER, "To": user,"Message": message, "Time": current_time}
-    message_register.append(new_message_dict)
-
-    # Escribir el contenido actualizado de vuelta al archivo JSON
-    with open("message_register.json", "w") as file:
-        json.dump(message_register, file)
-   
-def exit_webdriver():
-    DRIVER.quit()
-
-def get_users():
-    with open("users.json", "r") as f:
-        data = json.load(f)
-    
-    users = []
-
-    for user in data['users']:
-        username = user["username"]
-        password = user["password"]
-        location = user["location"]
-        location_id = user["location_id"]
-        users.append([username, password, location, location_id])
-
-    return users
-
-def write_users_on_db():
-    with open('contacted_users.txt', 'a+') as f:
-        for contacted_user in CONTACTED_USERS:
-            f.write(contacted_user)
-            f.write('\n')
-        f.close()
-
-def get_explorer():
-    root = tk.Tk()
-    root.withdraw()
-
-    file_path = filedialog.askopenfilename()
-
-    return file_path
-
-def wait_for_XPATH(xpath):
-    while True:
-        try:
-            element = WebDriverWait(DRIVER, 10).until(EC.presence_of_element_located((By.XPATH, xpath)))
-            break
-        except:
-            continue
-    return element
-
-def wait_for_CLASS(class_name):
-    while True:
-        try:
-            element = WebDriverWait(DRIVER, 10).until(EC.presence_of_element_located((By.CLASS_NAME, class_name)))
-            break
-        except:
-            continue
-    return element
-
-def wait_for_NAME(tag_name):
-    while True:
-        try:
-            element = WebDriverWait(DRIVER, 10).until(EC.presence_of_element_located((By.TAG_NAME, tag_name)))
-            break
-        except:
-            continue
-    return element
-
-def wait_for_NAME(tag_name):
-    while True:
-        try:
-            element = WebDriverWait(DRIVER, 10).until(EC.presence_of_element_located((By.TAG_NAME, tag_name)))
-            break
-        except:
-            continue
-    return element
-
-def wait_for_CSS(css_selector):
-    while True:
-        try:
-            element = WebDriverWait(DRIVER, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, css_selector)))
-            break
-        except:
-            continue
-    return element
-
-def message_button_missing_handler(css_selector):
-    try:
-        element = WebDriverWait(DRIVER, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, css_selector)))
+        sleep_random()
+        #pyautogui.press('enter')
+        save_contacted_user(username[1], 'DM')
     except:
-        element = None
-
-    return element
-
-def check_user_in_db(username):
-    try:
-        with open('contacted_users.txt', 'r') as f:
-            content = f.read()
-            usernames = content.split('\n')
-    except:
-        print("Archivo no disponible")
+        print('[-] El usuario', username[1], 'tiene la cuenta privada', '\n')
         return False
+    return True
 
-    found = False
-    for u in usernames:
-        if u == username:
-            return True
+def pick_message():
+    with open("data.json") as file:
+        data = json.load(file)
+    messages = [message["message"] for message in data["messages"]]
+    global MESSAGES_INDEX
+    message = messages[MESSAGES_INDEX]
+    MESSAGES_INDEX += 1
+    if MESSAGES_INDEX > len(messages) - 1:
+        MESSAGES_INDEX = 0
+    return message
 
-    return False
+def sleep_random():
+    sleep(random.uniform(3, 5))
 
-def check_user_contacted(username):
-    found = False
-    for u in CONTACTED_USERS:
-        if u == username:
-            return True
-
-    return False
-
-def register_failed_message(username, reason):
-    with open('failed_message_register.txt', 'a+') as f:
-        f.write(username)
-        f.write(' - ' + reason)
-        f.write('\n')
-        f.close()
-
-def check_user_messaged(username):
-    # Abrir el archivo JSON en modo de lectura
-    with open("message_register.json", "r") as file:
-        message_register = json.load(file)
-
-    # Verificar si el usuario se encuentra en algún campo "To"
-    for message in message_register:
-        if username in message["To"]:
-            return True
-    return False
-
-def main():
-
-    global DRIVER
-
-    DRIVER = create_webdriver() #Crea el webdriver que se encarga de controlar el navegador
-    
-    get_website() #Ingresa a https://www.instagram.com
-    
-    login_user() #Logea al usuario que se va a utilizar
-
-    get_location_page() #Ingresa a la locacion que le corresponde al usuario actual
-    
-    click_on_post() # Hace un click en el primer post para ingresar a el
-
-    comment_posts() #Deja un comentario en el post en el que esta parado
-
-    contact_users() #Envia un mensaje directo a algunos de los usuarios a los que se le realizo un comentario en una publicacion
-
-    exit_webdriver() #Finaliza el webdriver
-
+def wait_for_element(method, tag):
+    while True:
+        try:
+            element = WebDriverWait(DRIVER, 10).until(EC.presence_of_element_located((method, tag)))
+            break
+        except:
+            continue
+    return element
 
 def start_bot():
-    if DMS >= COMMENTS:
-        return -1
-    
-    users = get_users() #Obtiene una lista de los usuarios que van a utilizarse
-    #explorer = get_explorer()
+    global DRIVER
+    global USER 
 
-    for user in users:
-        global CURRENT_USER
-        CURRENT_USER = user
-        global CONTACTED_USERS 
-        CONTACTED_USERS = []
-        main()
+    if CURRENT_CYCLE == CYLCLES[0]:
+        DRIVER = create_webdriver()
+        USER = get_admin_user()
+        login_user()
+    contact_users()
+    if CURRENT_CYCLE == CYLCLES[-1]:
+        exit_webdriver()
 
-start_bot()
+### EJECUCION ####
+
+#Inicializacion de la base de datos
+# cred = credentials.Certificate('ruta/al/archivo.json')
+# firebase_admin.initialize_app(cred)
+# db = firestore.client()
+
+#Los ciclos deben ser creados desde el panel
+locations = []
+places = []
+hashtags = []
+
+location1 = Location('miami-beach-florida', '212928653', 5, 2)
+locations.append(location1)
+
+place1 = Place('kikiontheriver', 7, 2)
+places.append(place1)
+
+hashtag1 = Hashtag('tomorrowland', 8, 2)
+hashtags.append(hashtag1)
+
+create_new_cycle(locations, places, hashtags)
+
+nlp_en = spacy.load('en_core_web_sm')
+nlp_es = spacy.load('es_core_news_sm')
+
+start_time = datetime.now()
+
+for cycle in CYLCLES:
+    print("\n#### Iniciando ciclo ####\n")
+    CURRENT_CYCLE = cycle
+    start_bot()
+
+end_time = datetime.now()
+
+print('\nDuracion de la ejecucion:', end_time - start_time)
+
+##Cosas que necesito recibir desde el front:
+
+# Nombre del operador
+# Mail y contraseña de la cuenta
+# Un ciclo o ciclos conformados por 1 o mas Location, Place y Hashtag
+# Location esta conformado por un nombre, id, cantidad de comentarios y cantidad de mensajes
+# Place esta conformado por un nombre, cantidad de comentarios y cantidad de mensajes
+# Hashtag esta conformado por un nombre, cantidad de comentarios y cantidad de mensajes
+# Cantidad minima de post que debe tener un usuario para ser contactado
+
+##Creacion de un ciclo
+
+# locations = []
+# places = []
+# hashtags = []
+
+# location1 = Location('miami-beach-florida', '212928653', 2, 2)
+# locations.append(location1)
+
+# place1 = Place('kikiontheriver', 2, 5)
+# places.append(place1)
+
+# hashtag1 = Hashtag('tomorrowland', 2, 2)
+# hashtags.append(hashtag1)
+
+# create_new_cycle(locations, places, hashtags)
