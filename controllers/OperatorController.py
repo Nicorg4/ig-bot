@@ -10,13 +10,17 @@ class OperatorController:
     def register_routes(cls, blueprint):
         @blueprint.route('/login', methods=['GET', 'POST'])
         def login():
-             return jsonify({'message': 'OoooK'}), 200
+            if request.method == 'POST':
+                data = request.get_json()
+                username = data['username']
+                password = data['password']
+                cls.operator_service.login(username, password)
+                return jsonify({'message': 'OoooK'}), 200
 
         @blueprint.route('/register', methods=['GET', 'POST'])
         def register():
             if request.method == 'POST':
                 data = request.get_json()
-                print(data)
                 username = data['username']
                 password = data['password']
                 cls.operator_service.register(username, password)
