@@ -22,9 +22,6 @@ import spacy
 import tkinter as tk
 from tkinter import filedialog
 
-import firebase_admin
-from firebase_admin import credentials, firestore
-
 DRIVER = None
 USER = None
 COMMENTS_INDEX = 0

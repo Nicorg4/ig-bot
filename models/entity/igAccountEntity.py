@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
-class igAccountEntity(Base):
+class IgAccountEntity(Base):
     __tablename__ = 'igAccount'
     id = Column(Integer, primary_key=True)
     username = Column(String)

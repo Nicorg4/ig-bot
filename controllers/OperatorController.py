@@ -15,7 +15,7 @@ class OperatorController:
                 username = data['username']
                 password = data['password']
                 cls.operator_service.login(username, password)
-                return jsonify({'message': 'OoooK'}), 200
+                return jsonify({'message': 'Exito'}), 200
 
         @blueprint.route('/register', methods=['GET', 'POST'])
         def register():
@@ -23,8 +23,9 @@ class OperatorController:
                 data = request.get_json()
                 username = data['username']
                 password = data['password']
-                cls.operator_service.register(username, password)
-                return jsonify({'message': 'OoooK'}), 200
+                ranking = data['ranking']
+                cls.operator_service.register(username, password, ranking)
+                return jsonify({'message': 'Exito'}), 200
 
 
 
