@@ -1,5 +1,6 @@
 from flask import Flask
 from controllers.OperatorController import operator_blueprint
+from controllers.igAccountController import igAccount_blueprint
 from flask_sqlalchemy import SQLAlchemy
 from database.db_config import DATABASE_URL
 from database.db_session import db_session
@@ -10,6 +11,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 app.register_blueprint(operator_blueprint)
+app.register_blueprint(igAccount_blueprint)
 
 
 @app.teardown_appcontext
