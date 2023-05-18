@@ -13,34 +13,22 @@ class DestinationService:
             print('El Destino ya existe')
 
     def destinationExists(self, locationId, placeName, hashtag):
-        if self.checkLocationIdExists(locationId) or self.checkPlaceNameExists(placeName) or self.checkHashtagExists(hashtag):
-            return True
-        else:
-            return False
+        return self.checkLocationIdExists(locationId) or self.checkPlaceNameExists(placeName) or self.checkHashtagExists(hashtag)
 
     def checkLocationIdExists(self, locationId):
         if locationId == '':
             return False
-        locationIdFound = db_session.query(DestinationEntity).filter_by(locationId=locationId).first()
-        if locationIdFound:
-            return True
-        return False
+        return db_session.query(DestinationEntity).filter_by(locationId=locationId).first()
         
     def checkPlaceNameExists(self, placeName):
         if placeName == '':
             return False
-        placeNameFound = db_session.query(DestinationEntity).filter_by(placeName=placeName).first()
-        if placeNameFound:
-            return True
-        return False
+        return db_session.query(DestinationEntity).filter_by(placeName=placeName).first()
         
     def checkHashtagExists(self, hashtag):
         if hashtag == '':
             return False
-        hashtagFound = db_session.query(DestinationEntity).filter_by(hashtag=hashtag).first()
-        if hashtagFound:
-            return True
-        return False
+        return db_session.query(DestinationEntity).filter_by(hashtag=hashtag).first()
         
     def getDestinations(self):
         try:

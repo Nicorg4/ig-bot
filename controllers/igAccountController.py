@@ -9,7 +9,7 @@ class IgAccountController:
     @classmethod
     def register_routes(cls, blueprint):
 
-        @blueprint.route('/registerAccount', methods=['GET', 'POST'])
+        @blueprint.route('/register-account', methods=['GET', 'POST'])
         def register():
             if request.method == 'POST':
                 data = request.get_json()
@@ -17,6 +17,12 @@ class IgAccountController:
                 password = data['password']
                 owner = data['owner']
                 cls.igAccount_service.registerAccount(username, password, owner)
+                return jsonify({'message': 'Exito'}), 200
+            
+        @blueprint.route('/get-accounts', methods=['GET', 'POST'])
+        def getAccounts():
+            if request.method == 'GET':
+                cls.igAccount_service.get_igAccounts()
                 return jsonify({'message': 'Exito'}), 200
 
 igAccount_blueprint = Blueprint('igAccount', __name__)
