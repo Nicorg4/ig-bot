@@ -22,7 +22,15 @@ class IgAccountController:
         @blueprint.route('/get-accounts', methods=['GET', 'POST'])
         def getAccounts():
             if request.method == 'GET':
-                cls.igAccount_service.get_igAccounts()
+                cls.igAccount_service.getIgAccounts()
+                return jsonify({'message': 'Exito'}), 200
+            
+        @blueprint.route('/get-owner', methods=['GET', 'POST'])
+        def getOwner():
+            if request.method == 'GET':
+                data = request.get_json()
+                accountUsername = data['username']
+                cls.igAccount_service.getOwnerByIgUsername(accountUsername)
                 return jsonify({'message': 'Exito'}), 200
 
 igAccount_blueprint = Blueprint('igAccount', __name__)

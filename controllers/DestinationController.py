@@ -20,12 +20,12 @@ class DestinationController:
                 return jsonify({'message': 'Exito'}), 200
             
         @blueprint.route('/get-destination', methods=['GET', 'POST'])
-        def register():
+        def get():
             if request.method == 'GET':
                 cls.destination_service.getDestinations()
                 return jsonify({'message': 'Exito'}), 200
 
 
 
-destination_blueprint = Blueprint('destination__blueprint', __name__)
+destination_blueprint = Blueprint('destination_blueprint', __name__)
 DestinationController.register_routes(destination_blueprint)

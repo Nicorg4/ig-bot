@@ -17,9 +17,9 @@ class OperatorService:
         else:
             return False
     
-    def register(self, username, password, ranking):
+    def register(self, username, password):
         if(not self.operatorExists(username)):
-            new_operator = OperatorEntity(username=username, password=password, ranking=ranking)
+            new_operator = OperatorEntity(username=username, password=password)
             db_session.add(new_operator)
             db_session.commit()
             print('Usuario registrado')

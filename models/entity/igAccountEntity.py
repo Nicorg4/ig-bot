@@ -1,8 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
+from database.base import Base
 from sqlalchemy.orm import relationship
-
-Base = declarative_base()
+from .OperatorEntity import OperatorEntity
 
 class IgAccountEntity(Base):
     __tablename__ = 'igAccount'
@@ -10,4 +9,5 @@ class IgAccountEntity(Base):
     username = Column(String)
     password = Column(String)
     owner = Column(Integer, ForeignKey('operator.id'))
-    owner = relationship("Operator")
+
+    owner_obj = relationship(OperatorEntity)

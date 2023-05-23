@@ -23,8 +23,7 @@ class OperatorController:
                 data = request.get_json()
                 username = data['username']
                 password = data['password']
-                ranking = data['ranking']
-                cls.operator_service.register(username, password, ranking)
+                cls.operator_service.register(username, password)
                 return jsonify({'message': 'Exito'}), 200
 
 

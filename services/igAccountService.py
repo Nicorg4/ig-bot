@@ -14,13 +14,9 @@ class IgAccountService:
             print('La Cuenta ya existe')
 
     def accountExists(self, username):
-        account_found = db_session.query(IgAccountEntity).filter_by(username=username).first()
-        if account_found:
-            return True
-        else:
-            return False
+        return db_session.query(IgAccountEntity).filter_by(username=username).first()
 
-    def get_igAccounts(self):
+    def getIgAccounts(self):
         try:
             accounts = db_session.query(IgAccountEntity).all()
             for account in accounts:
@@ -29,3 +25,12 @@ class IgAccountService:
         except Exception as e:
             print(e)  # Better to use logging in a real-world application
             return False
+        
+    def getOwnerByIgUsername(self, igUsername):
+        if(not self.accountExists(igUsername)):
+            print('No existe la cuenta')
+            return False
+        else:
+            account = db_session.query(IgAccountEntity).filter_by(username=igUsername).first()
+            print(account.owner_obj.username)
+            return True
