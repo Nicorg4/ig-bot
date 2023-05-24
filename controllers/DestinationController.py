@@ -19,7 +19,7 @@ class DestinationController:
                 cls.destination_service.registerDestination(locationId, locationName, placeName, hashtag)
                 return jsonify({'message': 'Exito'}), 200
             
-        @blueprint.route('/get-destination', methods=['GET', 'POST'])
+        @blueprint.route('/get-destinations', methods=['GET', 'POST'])
         def get():
             if request.method == 'GET':
                 cls.destination_service.getDestinations()

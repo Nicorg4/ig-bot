@@ -4,18 +4,12 @@ from database.db_session import db_session
 
 class OperatorService:
     def check_user_credentials(self, username, password):
-        user_found = db_session.query(OperatorEntity).filter_by(username=username, password=password).first()
-        if user_found:
-            return True
-        else:
-            return False
+        return db_session.query(OperatorEntity).filter_by(username=username, password=password).first()
+
     
     def operatorExists(self, username):
-        user_found = db_session.query(OperatorEntity).filter_by(username=username).first()
-        if user_found:
-            return True
-        else:
-            return False
+        return db_session.query(OperatorEntity).filter_by(username=username).first()
+
     
     def register(self, username, password):
         if(not self.operatorExists(username)):
