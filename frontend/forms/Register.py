@@ -1,13 +1,33 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from tkinter.font import BOLD
+import requests
 
 class Register(tk.Frame):
     def register_user(self):
         username = self.username.get()
         password = self.password.get()
+        
+        url = 'http://localhost:8000/register'
+        headers = {'User-Agent': 'Mozilla/5.0'}  # Ejemplo de agente de usuario
+        params = {'username': username, 'password': password}
+        
+        try:
+            response = requests.post(url, headers=headers, json=params)
+            
+            if response.status_code == 200:
+                # La solicitud fue exitosa
+                data = response.json()
+                # Aquí puedes procesar los datos de la respuesta
+                print(data)
+            else:
+                # La solicitud falló
+                print('Error en la solicitud:', response.status_code)
+                
+        except requests.exceptions.RequestException as e:
+            # Ocurrió un error al realizar la solicitud
+            print('Error en la solicitud:', str(e))
 
-        # Implement the logic here to register the user. 
         # For now, we will just print the values
         print(f"Username: {username}, Password: {password}")
 
