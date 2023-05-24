@@ -26,7 +26,5 @@ class OperatorController:
                 cls.operator_service.register(username, password)
                 return jsonify({'message': 'Exito'}), 200
 
-
-
 operator_blueprint = Blueprint('operator_blueprint', __name__)
 OperatorController.register_routes(operator_blueprint)

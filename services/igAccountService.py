@@ -19,6 +19,7 @@ class IgAccountService:
     def getIgAccounts(self):
         try:
             accounts = db_session.query(IgAccountEntity).all()
+            print(accounts)
             for account in accounts:
                 print(account.username)
                 print(account.owner)
