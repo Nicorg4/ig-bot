@@ -12,6 +12,9 @@ class App(tk.Tk):
         container = tk.Frame(self)
         container.pack(side="top", fill="both", expand=True)
 
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+
         self.frames = {}
         for F in (Login, Register):
             page_name = F.__name__
