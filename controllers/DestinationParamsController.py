@@ -18,9 +18,10 @@ class DestinationParamsController:
                 numberOfMessages = data['numberOfMessages']
                 cls.destinationParams_service.setDestinationParams(destinationId, numberOfComments, numberOfMessages)
                 return jsonify({'message': 'Exito'}), 200
-            
+
+        @blueprint.route('/get-destination', methods=['GET', 'POST'])    
         def get():
-            if request.method == 'POST':
+            if request.method == 'GET':
                 data = request.get_json()
                 destinationId = data['destinationId']
                 cls.destinationParams_service.getDestinationByDestinationId(destinationId)
