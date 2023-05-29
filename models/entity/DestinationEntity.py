@@ -8,3 +8,4 @@ class DestinationEntity(Base):
     locationName = Column(String)
     placeName = Column(String)
     hashtag = Column(String)
+    type = Column(String)

@@ -1,10 +1,10 @@
 {
     "comments": [
         {
-            "comment": "Hey {} I have a proposal for you!, could you DM me please?"
+            "comment": "Hey {}, I have a proposal for you! Could you DM me please?"
         },
         {
-            "comment": "Hi {} I have a proposal for you!, could you DM me please?"
+            "comment": "Hi {}, I have a proposal for you! Could you DM me please?"
         }
     ],
     "messages": [
@@ -22,9 +22,6 @@
         },
         {
             "message": "Nice to meet you {}, can I talk to you for a minute?"
-        },
-        {
-            "message": "How are you {}? {} here!!"
         }
     ]
   }
