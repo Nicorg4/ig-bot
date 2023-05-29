@@ -25,6 +25,12 @@ class OperatorController:
                 password = data['password']
                 cls.operator_service.register(username, password)
                 return jsonify({'message': 'Exito'}), 200
+            
+        @blueprint.route('/get-operators', methods=['GET', 'POST'])
+        def get():
+            if request.method == 'GET':
+                cls.operator_service.getOperators()
+                return jsonify({'message': 'Exito'}), 200
 
 operator_blueprint = Blueprint('operator_blueprint', __name__)
 OperatorController.register_routes(operator_blueprint)

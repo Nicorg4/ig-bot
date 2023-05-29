@@ -3,9 +3,9 @@ from models.entity.DestinationEntity import DestinationEntity
 from database.db_session import db_session
 
 class DestinationService:    
-    def registerDestination(self, locationId, locationName, placeName, hashtag):
+    def registerDestination(self, locationId, locationName, placeName, hashtag, type):
         if(not self.destinationExists(locationId, placeName, hashtag)):
-            new_destination = DestinationEntity(locationId=locationId, locationName=locationName, placeName=placeName, hashtag=hashtag)
+            new_destination = DestinationEntity(locationId=locationId, locationName=locationName, placeName=placeName, hashtag=hashtag, type=type)
             db_session.add(new_destination)
             db_session.commit()
             print('Destino registrado')

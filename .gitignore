@@ -1,2 +1,4 @@
 
 contacted_users.txt
+*.pyc
+contacted_users.json
