@@ -1,7 +1,7 @@
 # controllers/user_controller.py
 from flask import Blueprint, request, render_template, redirect, url_for, jsonify
-from services.IgAccountService import IgAccountService
-from models.domain.IgAccount import IgAccount
+from services.igAccountService import IgAccountService
+from models.domain.igAccount import IgAccount
 
 class IgAccountController:
     igAccount_service = IgAccountService()

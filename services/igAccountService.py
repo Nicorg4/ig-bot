@@ -1,5 +1,5 @@
-from models.domain.IgAccount import IgAccount
-from models.entity.IgAccountEntity import IgAccountEntity
+from models.domain.igAccount import IgAccount
+from models.entity.igAccountEntity import IgAccountEntity
 from database.db_session import db_session
 
 class IgAccountService:
