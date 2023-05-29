@@ -21,9 +21,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
 
 import spacy
-
-import tkinter as tk
-from tkinter import filedialog
+from colorama import Fore, Back, Style
 
 DRIVER = None
 USER = None
@@ -37,6 +35,7 @@ TOTAL_DMS = 0
 CURRENT_CYCLE = None
 TOO_OLD_COUNTER = 0
 DM_SPAM_PROTECTION_COUNTER = 0
+SPAM_MAX_WINDOW = 10
 HEADLESS = False
 NLP_EN = spacy.load('en_core_web_sm')
 NLP_ES = spacy.load('es_core_news_sm')
@@ -92,7 +91,7 @@ def login_user():
     login_button = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[3]/button')
     login_button.click()
 
-    print('Se esta utilizando la cuenta de:', USER[0], '\n')
+    print(Fore.MAGENTA + 'Se esta utilizando la cuenta de:', USER[0], '\n')
 
 def contact_users():
     for destination in CURRENT_CYCLE.destinations:
@@ -114,7 +113,7 @@ def comment_on_location(location):
         if old_counter_too_big():
             global TOO_OLD_COUNTER
             TOO_OLD_COUNTER = 0
-            print("[-] Los posts son demasiado viejos \n")
+            print(Fore.RED + "[-] Los posts son demasiado viejos \n")
             break
         next_post()
 
@@ -126,7 +125,7 @@ def comment_on_place(place):
         if old_counter_too_big():
             global TOO_OLD_COUNTER
             TOO_OLD_COUNTER = 0
-            print("[-] Los posts son demasiado viejos \n")
+            print(Fore.RED + "[-] Los posts son demasiado viejos \n")
             break
         next_post()
 
@@ -138,7 +137,7 @@ def comment_on_hashtag(hashtag):
         if old_counter_too_big():
             global TOO_OLD_COUNTER
             TOO_OLD_COUNTER = 0
-            print("[-] Los posts son demasiado viejos \n")
+            print(Fore.RED + "[-] Los posts son demasiado viejos \n")
             break
         next_post()
 
@@ -148,9 +147,9 @@ def comment_setup(adress, name):
     except:
         pass
     DRIVER.get(adress)
-    print('-------------------------------------\n')
-    print('Comentando en', '#' + name, '\n')
-    print('-------------------------------------\n')
+    print(Fore.MAGENTA + '-------------------------------------\n')
+    print(Fore.MAGENTA + 'Comentando en', '#' + name, '\n')
+    print(Fore.MAGENTA + '-------------------------------------\n')
     sleep_random()
     first_post = wait_for_element(By.CLASS_NAME, '_aagw')
     first_post.click()
@@ -163,7 +162,7 @@ def commenting_process():
     except:
         return successfull_comment
     
-    print('[+] Comentandole a', username[1])
+    print(Fore.GREEN + '[+] Comentandole a', username[1])
     if check_user_meets_criteria(username[1], username[0]):
         if leave_comment(username[0]):
             save_contacted_user(username[1], 'Comment')
@@ -200,17 +199,17 @@ def is_name(username):
 
 def check_user_meets_criteria(username, name):
     if not commenting_available():
-        print('[-] El usuario no puede recibir comentarios\n')
+        print(Fore.RED + '[-] El usuario no puede recibir comentarios\n')
         return False
     if user_in_db(username):
-        print('[-] El usuario ya esta en la base de datos\n')
+        print(Fore.RED + '[-] El usuario ya esta en la base de datos\n')
         return False
     if not post_is_new():
-        print('[-] El post es demasiado antiguo\n')
+        print(Fore.RED + '[-] El post es demasiado antiguo\n')
         increase_old_counter()
         return False
     if not check_user_uploads_enough():
-        print('[-] El usuario no tiene los posts suficientes\n')
+        print(Fore.RED + '[-] El usuario no tiene los posts suficientes\n')
         return False
     # if user_is_brand(username, name):
     #     print('[-] El usuario es una empresa\n')
@@ -325,7 +324,7 @@ def leave_comment(username):
 
         return True
     except:
-        print("[-] El usuario bloqueo los comentarios \n")
+        print(Fore.RED + "[-] El usuario bloqueo los comentarios \n")
         return False
 
 def pick_comment():
@@ -347,7 +346,7 @@ def save_contacted_user(username, method):
     with open("contacted_users.json", 'w') as file:
         json.dump(existing_users, file)
 
-    print("[+]", username,"guardado en la base de datos\n")
+    print(Fore.GREEN + "[+]", username,"guardado en la base de datos\n")
 
 def get_users_in_db():
     try:
@@ -370,10 +369,12 @@ def next_post():
             continue
 
 def send_messages(destination):
+    global DM_SPAM_PROTECTION_COUNTER
+    global SPAM_MAX_WINDOW
     number_of_messages = 0
     main_window_handle = DRIVER.current_window_handle
     while number_of_messages < destination.number_of_messages:
-        if DM_SPAM_PROTECTION_COUNTER < 10:
+        if DM_SPAM_PROTECTION_COUNTER < SPAM_MAX_WINDOW:
             username = get_username()
             print('[+] Enviandole mensaje a', username[1])
             if check_user_meets_criteria_dm(username[1]):
@@ -385,13 +386,15 @@ def send_messages(destination):
                 DRIVER.switch_to.window(main_window_handle)
                 sleep_random()
         else:
-            print("[-] Se activo el protocolo de prevencion de deteccion de spam\n")
+            print(Fore.CYAN + "[-] Se activo el protocolo de prevencion de deteccion de spam\n")
+            DM_SPAM_PROTECTION_COUNTER = 0
+            SPAM_MAX_WINDOW = 5
             break
         next_post()
 
 def check_user_meets_criteria_dm(username):
     if user_in_db(username):
-        print('[-] El usuario ya esta en la base de datos\n')
+        print(Fore.YELLOW + '[-] El usuario ya esta en la base de datos\n')
         return False
     return True
 
@@ -404,13 +407,14 @@ def visit_profile(username):
 def send_message(username):
     global DM_SPAM_PROTECTION_COUNTER
     global TOTAL_DMS
+    global SPAM_MAX_WINDOW
     
     try:
         message_button = wait_for_element(By.CSS_SELECTOR, "div.x1i10hfl[role='button']")
         message_button.click()
         sleep_random()
     except:
-        print("[-] El usuario", username[1], 'no puede recibir mensajes \n')
+        print(Fore.RED + "[-] El usuario", username[1], 'no puede recibir mensajes \n')
         return False
 
     try:
@@ -426,7 +430,7 @@ def send_message(username):
             message_textarea = WebDriverWait(DRIVER, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'p.xat24cr.xdj266r')))
         except TimeoutException:
             DM_SPAM_PROTECTION_COUNTER += 1
-            print('[-] El usuario', username[1], 'tiene la cuenta privada', '\n')
+            print(Fore.RED + '[-] El usuario', username[1], 'tiene la cuenta privada', '\n')
             return False
 
     sleep_random()
@@ -447,6 +451,7 @@ def send_message(username):
 
     TOTAL_DMS += 1
     DM_SPAM_PROTECTION_COUNTER = 0
+    SPAM_MAX_WINDOW = 10
 
     return True
 
@@ -490,7 +495,7 @@ def bot_setup(id):
                 exit_webdriver()
                 continue
     contact_users()
-    print("\n#### Ciclo finalizado ####\n")
+    print(Fore.MAGENTA + "\n#### Ciclo finalizado ####\n")
     return_home()
 
 def start_bot(destinations, id):
@@ -498,5 +503,5 @@ def start_bot(destinations, id):
 
     cycle = create_new_cycle(destinations)
     CURRENT_CYCLE = cycle
-    print("\n#### Iniciando ciclo nuevo ####\n")
+    print(Fore.MAGENTA + "\n#### Iniciando ciclo nuevo ####\n")
     bot_setup(id)
