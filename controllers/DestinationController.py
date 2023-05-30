@@ -23,8 +23,13 @@ class DestinationController:
         @blueprint.route('/get-destinations', methods=['GET', 'POST'])
         def get():
             if request.method == 'GET':
-                cls.destination_service.getDestinations()
-                return jsonify({'message': 'Exito'}), 200
+                try:
+                    destinations = cls.destination_service.getDestinations()
+                    # Assuming your DestinationEntity has a method to convert it to dict
+                    destinations_json = [destination.to_dict() for destination in destinations]
+                    return jsonify({'destinations': destinations_json}), 200
+                except Exception as e:
+                    return jsonify({'error': str(e)}), 500
 
 
 

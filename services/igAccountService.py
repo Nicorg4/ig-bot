@@ -23,7 +23,8 @@ class IgAccountService:
             for account in accounts:
                 accountList.append({
                     'username': account.username,
-                    'password': account.password
+                    'password': account.password,
+                    'id': account.id
                 })
             return accountList
         except Exception as e:

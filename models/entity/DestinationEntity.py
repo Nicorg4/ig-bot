@@ -9,3 +9,13 @@ class DestinationEntity(Base):
     placeName = Column(String)
     hashtag = Column(String)
     type = Column(String)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'locationId': self.locationId,
+            'locationName': self.locationName,
+            'placeName': self.placeName,
+            'hashtag': self.hashtag,
+            'type': self.type
+        }

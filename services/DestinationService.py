@@ -33,11 +33,9 @@ class DestinationService:
     def getDestinations(self):
         try:
             destinations = db_session.query(DestinationEntity).all()
-            for destination in destinations:
-                print(destination)
+            return destinations
         except Exception as e:
-            print(e)  # Better to use logging in a real-world application
-            return False
-        
+            print(e)  # It's better to use logging in a real-world application
+            raise
 
     
