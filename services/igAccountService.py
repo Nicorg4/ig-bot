@@ -39,3 +39,11 @@ class IgAccountService:
             account = db_session.query(IgAccountEntity).filter_by(username=igUsername).first()
             print(account.owner_obj.username)
             return True
+        
+    def getIgPasswordByIgUsername(self, igUsername):
+        if(not self.accountExists(igUsername)):
+            print('No existe la cuenta')
+            return False
+        else:
+            account = db_session.query(IgAccountEntity).filter_by(username=igUsername).first()
+            return account
