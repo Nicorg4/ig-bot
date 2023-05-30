@@ -19,10 +19,13 @@ class IgAccountService:
     def getIgAccounts(self):
         try:
             accounts = db_session.query(IgAccountEntity).all()
-            print(accounts)
+            accountList = []
             for account in accounts:
-                print(account.username)
-                print(account.owner)
+                accountList.append({
+                    'username': account.username,
+                    'password': account.password
+                })
+            return accountList
         except Exception as e:
             print(e)  # Better to use logging in a real-world application
             return False
