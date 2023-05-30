@@ -1,27 +1,22 @@
 from time import sleep
 from datetime import datetime, timedelta
-from collections import deque
 import json
-import pyautogui
-import os
 import re
 import random
 import pyperclip
+import spacy
+from colorama import Fore
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
-from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import TimeoutException
-
-import spacy
-from colorama import Fore, Back, Style
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 DRIVER = None
 USER = None
@@ -80,15 +75,15 @@ def get_admin_user():
     return [IG_USER, IG_PASS]
 
 def login_user():
-    username_input = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
-    password_input = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input')
+    username_input = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input', 10)
+    password_input = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input', 10)
 
     username_input.send_keys(USER[0])
     password_input.send_keys(USER[1])
 
     sleep_random()
 
-    login_button = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[3]/button')
+    login_button = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[3]/button', 10)
     login_button.click()
 
     print(Fore.MAGENTA + 'Se esta utilizando la cuenta de:', USER[0], '\n')
@@ -151,7 +146,7 @@ def comment_setup(adress, name):
     print(Fore.MAGENTA + 'Comentando en', '#' + name, '\n')
     print(Fore.MAGENTA + '-------------------------------------\n')
     sleep_random()
-    first_post = wait_for_element(By.CLASS_NAME, '_aagw')
+    first_post = wait_for_element(By.CLASS_NAME, '_aagw', 10)
     first_post.click()
     sleep_random()
 
@@ -167,19 +162,21 @@ def commenting_process():
         if leave_comment(username[0]):
             save_contacted_user(username[1], 'Comment')
             global TOTAL_COMMENTS
+            global TOO_OLD_COUNTER
             TOTAL_COMMENTS += 1
+            TOO_OLD_COUNTER = 0
             successfull_comment = 1
     sleep_random()
     return successfull_comment
 
 def get_username():
-    user_anchor = wait_for_element(By.XPATH, "//div[@class='xt0psk2']//a")
+    user_anchor = wait_for_element(By.XPATH, "//div[@class='xt0psk2']//a", 10)
     username_from_anchor = user_anchor.text
     actions = ActionChains(DRIVER)
     actions.move_to_element(user_anchor).perform()
     sleep_random()
     try:
-        username = wait_for_element(By.XPATH, "//div[@class='xmix8c7 x1gslohp x1rva8in']//span").text
+        username = wait_for_element(By.XPATH, "//div[@class='xmix8c7 x1gslohp x1rva8in']//span", 5).text
     except:
         username = username_from_anchor
 
@@ -233,10 +230,10 @@ def user_in_db(username):
 
 def commenting_available():
     try:
-        short_wait_for_element(By.XPATH, "//span[text()='Comments on this post have been limited.']")
+        wait_for_element(By.XPATH, "//span[text()='Comments on this post have been limited.']", 3)
     except:
         try:
-            short_wait_for_element(By.TAG_NAME, "textarea")
+            wait_for_element(By.TAG_NAME, "textarea", 3)
             return True
         except:
             return False
@@ -251,7 +248,7 @@ def check_user_uploads_enough():
 
 def post_is_new():
     try:
-        post_date = short_wait_for_element(By.CLASS_NAME, '_aaqe').get_attribute("datetime")
+        post_date = wait_for_element(By.CLASS_NAME, '_aaqe', 3).get_attribute("datetime")
         date_now = datetime.now()
         clean_post_date = datetime.strptime(post_date, "%Y-%m-%dT%H:%M:%S.%fZ")
         a_week_from_now = date_now - timedelta(days=7)
@@ -282,11 +279,11 @@ def user_is_brand(username, name):
 
 def get_user_posts():
     try:
-        user_anchor = short_wait_for_element(By.XPATH, "//div[@class='xt0psk2']//a")
+        user_anchor = wait_for_element(By.XPATH, "//div[@class='xt0psk2']//a", 3)
         actions = ActionChains(DRIVER)
         actions.move_to_element(user_anchor).perform()
         sleep_random()
-        posts = short_wait_for_element(By.XPATH, "//div[contains(@class, 'x6s0dn4') and contains(@class, 'xrvj5dj')]/div/div/span/span").text
+        posts = wait_for_element(By.XPATH, "//div[contains(@class, 'x6s0dn4') and contains(@class, 'xrvj5dj')]/div/div/span/span", 3).text
 
         if 'K' in posts:
             posts = posts.replace('K', '')
@@ -302,9 +299,9 @@ def get_user_posts():
 
 def leave_comment(username):
     try:
-        comment_textarea = wait_for_element(By.TAG_NAME, "textarea")
+        comment_textarea = wait_for_element(By.TAG_NAME, "textarea", 5)
         comment_textarea.click()
-        updated_textarea = wait_for_element(By.TAG_NAME, "textarea")
+        updated_textarea = wait_for_element(By.TAG_NAME, "textarea", 5)
         comment = pick_comment().format(username)
 
         sleep_random()
@@ -376,7 +373,7 @@ def send_messages(destination):
     while number_of_messages < destination.number_of_messages:
         if DM_SPAM_PROTECTION_COUNTER < SPAM_MAX_WINDOW:
             username = get_username()
-            print('[+] Enviandole mensaje a', username[1])
+            print(Fore.GREEN + '[+] Enviandole mensaje a', username[1])
             if check_user_meets_criteria_dm(username[1]):
                 visit_profile(username[1])
                 sleep_random()
@@ -386,7 +383,7 @@ def send_messages(destination):
                 DRIVER.switch_to.window(main_window_handle)
                 sleep_random()
         else:
-            print(Fore.CYAN + "[-] Se activo el protocolo de prevencion de deteccion de spam\n")
+            print(Fore.YELLOW + "[-] Se activo el protocolo de prevencion de deteccion de spam\n")
             DM_SPAM_PROTECTION_COUNTER = 0
             SPAM_MAX_WINDOW = 5
             break
@@ -394,7 +391,7 @@ def send_messages(destination):
 
 def check_user_meets_criteria_dm(username):
     if user_in_db(username):
-        print(Fore.YELLOW + '[-] El usuario ya esta en la base de datos\n')
+        print(Fore.RED + '[-] El usuario ya esta en la base de datos\n')
         return False
     return True
 
@@ -410,7 +407,7 @@ def send_message(username):
     global SPAM_MAX_WINDOW
     
     try:
-        message_button = wait_for_element(By.CSS_SELECTOR, "div.x1i10hfl[role='button']")
+        message_button = wait_for_element(By.CSS_SELECTOR, "div.x1i10hfl[role='button']", 5)
         message_button.click()
         sleep_random()
     except:
@@ -470,14 +467,10 @@ def return_home():
     DRIVER.get("https://www.instagram.com")
 
 def sleep_random():
-    sleep(random.uniform(1, 3))
+    sleep(random.uniform(4, 6))
 
-def wait_for_element(method, tag):
-    element = WebDriverWait(DRIVER, 10).until(EC.presence_of_element_located((method, tag)))
-    return element
-
-def short_wait_for_element(method, tag):
-    element = WebDriverWait(DRIVER, 2).until(EC.presence_of_element_located((method, tag)))
+def wait_for_element(method, tag, time):
+    element = WebDriverWait(DRIVER, time).until(EC.presence_of_element_located((method, tag)))
     return element
    
 def bot_setup(id):
