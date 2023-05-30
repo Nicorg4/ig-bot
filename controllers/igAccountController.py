@@ -22,8 +22,8 @@ class IgAccountController:
         @blueprint.route('/get-accounts', methods=['GET', 'POST'])
         def getAccounts():
             if request.method == 'GET':
-                cls.igAccount_service.getIgAccounts()
-                return jsonify({'message': 'Exito'}), 200
+                accounts = cls.igAccount_service.getIgAccounts()
+                return jsonify({'accounts': accounts}), 200
             
         @blueprint.route('/get-owner', methods=['GET', 'POST'])
         def getOwner():
