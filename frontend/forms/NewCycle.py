@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+import requests
 
 class NewCycle(tk.Frame):
     def __init__(self, parent, controller):
@@ -7,6 +8,9 @@ class NewCycle(tk.Frame):
         self.controller = controller
 
         self.config(bg='#fcfcfc')
+
+        # Fetch the list of account usernames
+        self.accounts = self.get_accounts()
 
         # frame_form
         frame_form = tk.Frame(self, bd=0, relief=tk.SOLID, bg='#fcfcfc')
@@ -24,7 +28,7 @@ class NewCycle(tk.Frame):
 
         dropdown1_label = tk.Label(frame_form_fill, text="Dropdown 1", font=('Times', 14), fg="#666a88", bg='#fcfcfc', anchor="w")
         dropdown1_label.pack(fill=tk.X, padx=20, pady=5)
-        self.dropdown1 = ttk.Combobox(frame_form_fill, font=('Times', 14), values=["Option 123", "Option 2", "Option 3"])
+        self.dropdown1 = ttk.Combobox(frame_form_fill, font=('Times', 14), values=self.accounts)
         self.dropdown1.pack(fill=tk.X, padx=20, pady=10)
 
         dropdown2_label = tk.Label(frame_form_fill, text="Dropdown 2", font=('Times', 14), fg="#666a88", bg='#fcfcfc', anchor="w")
@@ -41,3 +45,19 @@ class NewCycle(tk.Frame):
 
         # Now you can process these values
         print(f"Dropdown 1: {dropdown1_value}, Dropdown 2: {dropdown2_value}")
+
+
+    def get_accounts(self):
+        url = 'http://localhost:8000/get-accounts'  # Replace this with your API endpoint
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                accounts = response.json()['accounts']
+                usernames = [account['username'] for account in accounts]
+                return usernames
+            else:
+                print(f'Error: received status code {response.status_code}')
+        except requests.exceptions.RequestException as e:
+            print('Error:', e)
+            return []
+        return []
