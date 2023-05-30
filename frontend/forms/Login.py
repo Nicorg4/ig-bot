@@ -59,3 +59,7 @@ class Login(tk.Frame):
 
         register = tk.Button(frame_form_fill, text="Register", font=('Times', 15, BOLD), bg='#3a5ff6', bd=0, fg="#fff", command=lambda: controller.show_frame("Register"))
         register.pack(fill=tk.X, padx=20, pady=20)
+
+
+        newCycle = tk.Button(frame_form_fill, text="Create new cycle", font=('Times', 15, BOLD), bg='#3a5ff6', bd=0, fg="#fff", command=lambda: controller.show_frame("NewCycle"))
+        newCycle.pack(fill=tk.X, padx=20, pady=20)

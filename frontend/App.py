@@ -4,6 +4,7 @@ from tkinter.font import BOLD
 import util.generic as utl
 from forms.Login import Login
 from forms.Register import Register
+from forms.NewCycle import NewCycle
 class App(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
@@ -16,7 +17,7 @@ class App(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (Login, Register):
+        for F in (Login, Register, NewCycle):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame

@@ -1,6 +1,6 @@
 from flask import Flask
 from controllers.OperatorController import operator_blueprint
-from controllers.IgAccountController import igAccount_blueprint
+from controllers.igAccountController import igAccount_blueprint
 from controllers.DestinationController import destination_blueprint
 from controllers.DestinationParamsController import destinationParams_blueprint
 from controllers.CycleController import cycle_blueprint

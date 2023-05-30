@@ -1,5 +1,5 @@
-from models.domain.IgAccount import IgAccount
-from models.entity.IgAccountEntity import IgAccountEntity
+from models.domain.igAccount import IgAccount
+from models.entity.igAccountEntity import IgAccountEntity
 from database.db_session import db_session
 
 class IgAccountService:
@@ -19,10 +19,14 @@ class IgAccountService:
     def getIgAccounts(self):
         try:
             accounts = db_session.query(IgAccountEntity).all()
-            print(accounts)
+            accountList = []
             for account in accounts:
-                print(account.username)
-                print(account.owner)
+                accountList.append({
+                    'username': account.username,
+                    'password': account.password,
+                    'id': account.id
+                })
+            return accountList
         except Exception as e:
             print(e)  # Better to use logging in a real-world application
             return False
