@@ -6,7 +6,7 @@ def test01():
     instagram_bot.IG_USER = 'pipslab.team@gmail.com'
     instagram_bot.IG_PASS = 'pipslabteam2023'
     instagram_bot.MIN_POSTS = 10
-    instagram_bot.HEADLESS = False
+    instagram_bot.HEADLESS = True
 
     destinations = []
     destinations2 = []
@@ -43,14 +43,21 @@ def test02():
     instagram_bot.IG_USER = 'pipsdevs@gmail.com'
     instagram_bot.IG_PASS = 'pipslabteam2023'
     instagram_bot.MIN_POSTS = 10
-    instagram_bot.HEADLESS = False
+    instagram_bot.HEADLESS = True
 
     destinations = []
 
-    destination1 = Destination('', '', 'fontainebleau', '', 5, 2, 'place')
+    start_time = datetime.now()
+
+    destination1 = Destination('', '', 'faenamiamibeach', '', 40, 10, 'place')
     destinations.append(destination1)
 
     start_bot(destinations, True)
+
+    end_time = datetime.now()
+    
+    print('\nDuracion de la ejecucion:', end_time - start_time)
+    print("Total de comentarios realizados:", instagram_bot.TOTAL_COMMENTS, "\nTotal de mensajes enviados:", instagram_bot.TOTAL_DMS)
 
 def test03():
     instagram_bot.IG_USER = 'pipslab.team@gmail.com'
@@ -73,6 +80,33 @@ def test03():
         message_textarea.send_keys(Keys.RETURN)
     except Exception as e:
         print("Error:", e)
+
+
+def finalTest():
+    instagram_bot.IG_USER = 'miafrancisco'
+    instagram_bot.IG_PASS = 'its.miaanicole'
+    instagram_bot.MIN_POSTS = 10
+    instagram_bot.HEADLESS = False
+
+    destinations = []
+    destinations2 = []
+
+    start_time = datetime.now()
+
+    destination1 = Destination('', '', 'louboutinworld', '', 40, 10, 'place')
+    destinations.append(destination1)
+    start_bot(destinations, True)
+    sleep(3600)
+
+    destination3 = Destination('nobu-malibu', '284736021647673', '', '', 20, 5, 'location')
+    destinations2.append(destination3)
+    create_new_cycle(destinations2)
+    start_bot(destinations2, False)
+
+    end_time = datetime.now()
+    
+    print('\nDuracion de la ejecucion:', end_time - start_time)
+    print("Total de comentarios realizados:", instagram_bot.TOTAL_COMMENTS, "\nTotal de mensajes enviados:", instagram_bot.TOTAL_DMS)
 
 try:
     test02()
