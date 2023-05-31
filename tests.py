@@ -40,16 +40,16 @@ def test01():
     print("Total de comentarios realizados:", instagram_bot.TOTAL_COMMENTS, "\nTotal de mensajes enviados:", instagram_bot.TOTAL_DMS)
 
 def test02():
-    instagram_bot.IG_USER = 'pipsdevs@gmail.com'
+    instagram_bot.IG_USER = 'pipslab.team@gmail.com'
     instagram_bot.IG_PASS = 'pipslabteam2023'
     instagram_bot.MIN_POSTS = 10
-    instagram_bot.HEADLESS = True
+    instagram_bot.HEADLESS = False
 
     destinations = []
 
     start_time = datetime.now()
 
-    destination1 = Destination('', '', 'faenamiamibeach', '', 40, 10, 'place')
+    destination1 = Destination('', '', 'faenamiamibeach', '', 3, 1, 'place')
     destinations.append(destination1)
 
     start_bot(destinations, True)
@@ -93,14 +93,13 @@ def finalTest():
 
     start_time = datetime.now()
 
-    destination1 = Destination('', '', 'louboutinworld', '', 40, 10, 'place')
+    destination1 = Destination('', '', 'louboutinworld', '', 35, 10, 'place')
     destinations.append(destination1)
     start_bot(destinations, True)
     sleep(3600)
 
-    destination3 = Destination('nobu-malibu', '284736021647673', '', '', 20, 5, 'location')
+    destination3 = Destination('nobu-malibu', '284736021647673', '', '', 40, 10, 'location')
     destinations2.append(destination3)
-    create_new_cycle(destinations2)
     start_bot(destinations2, False)
 
     end_time = datetime.now()

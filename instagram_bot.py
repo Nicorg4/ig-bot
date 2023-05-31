@@ -17,6 +17,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium_stealth import stealth
 
 DRIVER = None
 USER = None
@@ -57,16 +58,26 @@ def create_webdriver():
     service = Service(ChromeDriverManager().install())
     options = webdriver.ChromeOptions()
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
-    options.add_experimental_option("detach", True) # Previene que el chrome se cierre cuando se terminen las tareas (No recomendado)
+    options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36")
+    options.add_experimental_option("detach", True)
     options.binary_location = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
     options.add_argument("--incognito")
     if HEADLESS:
         options.add_argument('--headless')  # Iniciar en modo headless
-    options.add_argument('--window-size=1920x1080')  # Tamaño de ventana
+    options.add_argument('--window-size=1920x1080')
     driver = webdriver.Chrome(service=service, options=options)
-    driver.get("https://www.instagram.com")
 
+    stealth(driver,
+            languages=["en-US", "en"],
+            vendor="Google Inc.",
+            platform="Win32",
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True)
+
+    driver.get("https://www.instagram.com")
     return driver
+
 
 def exit_webdriver():
     DRIVER.quit()
@@ -141,6 +152,7 @@ def comment_setup(adress, name):
         WebDriverWait(DRIVER, 5).until(EC.presence_of_element_located((By.CLASS_NAME, "_aa56")))
     except:
         pass
+    sleep_random()
     DRIVER.get(adress)
     print(Fore.MAGENTA + '-------------------------------------\n')
     print(Fore.MAGENTA + 'Comentando en', '#' + name, '\n')
@@ -358,7 +370,7 @@ def next_post():
         try:
             svg_elements = DRIVER.find_elements(By.TAG_NAME, "svg")
             for svg in svg_elements:
-                if svg.get_attribute('aria-label') == 'Next':
+                if svg.get_attribute('aria-label') == 'Next' or svg.get_attribute('aria-label') == 'Siguiente':
                     svg.click()
                     break
             break
