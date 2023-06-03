@@ -7,6 +7,8 @@ class NewCycle(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.controller = controller
 
+        self.cycle_counter = 1
+
         self.config(bg='#fcfcfc')
 
         # Fetch the list of account usernames
@@ -42,12 +44,20 @@ class NewCycle(tk.Frame):
         self.scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
         canvas.create_window((0, 0), window=self.scrollable_frame, anchor='nw')
 
+        self.add_dropdown(self.scrollable_frame, "Ig Accounts", self.accounts)
+
+        # Create a frame for dropdowns with a border
+        self.dropdown_frame = tk.Frame(self.scrollable_frame, bd=2, relief=tk.SOLID)
+        self.dropdown_frame.pack(pady=10)  # add some padding for better visibility
+
+
         # Add first two dropdowns
-        self.add_dropdown(self.scrollable_frame, "Destination Type", self.accounts)
-        self.add_dropdown(self.scrollable_frame, "Destination", ["Option A", "Option B", "Option C"])
+        
+        self.add_dropdown(self.dropdown_frame, "Destination Type", ["Location", "Place", "Hashtag"])
+        self.add_dropdown(self.dropdown_frame, "Destination", ["Option A", "Option B", "Option C"])
 
         # Create add more dropdowns button
-        self.add_button = tk.Button(self.scrollable_frame, text='+', command=self.add_more_dropdowns)
+        self.add_button = tk.Button(self.scrollable_frame, text='+', command=self.add_new_dropdown_set)
         self.add_button.pack()
 
     def add_dropdown(self, frame, label, values):
@@ -60,10 +70,43 @@ class NewCycle(tk.Frame):
 
     def add_more_dropdowns(self):
         self.add_button.destroy()
-        self.add_dropdown(self.scrollable_frame, "Destination Type", self.accounts)
-        self.add_dropdown(self.scrollable_frame, "Destination", ["Option A", "Option B", "Option C"])
+
+    # Clear the dropdown frame and re-create it to reset the border
+        self.dropdown_frame.destroy()
+        self.dropdown_frame = tk.Frame(self.scrollable_frame, bd=2, relief=tk.SOLID)
+        self.dropdown_frame.pack(pady=10)
+
+        # Add dropdowns to the self.dropdown_frame, not the self.scrollable_frame
+        self.add_dropdown(self.dropdown_frame, "Destination Type", self.accounts)
+        self.add_dropdown(self.dropdown_frame, "Destination", ["Option A", "Option B", "Option C"])
+        
         self.add_button = tk.Button(self.scrollable_frame, text='+', command=self.add_more_dropdowns)
         self.add_button.pack()
+
+
+    def add_new_dropdown_set(self):
+        # Destroy the add button
+        if hasattr(self, 'add_button'):
+            self.add_button.destroy()
+
+        # Create a new dropdown frame
+        dropdown_frame = tk.Frame(self.scrollable_frame, bd=2, relief=tk.SOLID)
+        dropdown_frame.pack(pady=10)  # add some padding for better visibility
+
+        # Add a title for the new set of dropdowns
+        cycle_title = tk.Label(dropdown_frame, text=f"Cycle #{self.cycle_counter}", font=('Times', 16), fg="#666a88", bg='#fcfcfc')
+        cycle_title.pack(fill=tk.X, padx=20, pady=10)
+
+        # Add two dropdowns to the new frame
+        self.add_dropdown(dropdown_frame, "Destination Type", self.accounts)
+        self.add_dropdown(dropdown_frame, "Destination", ["Option A", "Option B", "Option C"])
+
+        # Recreate the add button
+        self.add_button = tk.Button(self.scrollable_frame, text='+', command=self.add_new_dropdown_set)
+        self.add_button.pack()
+
+        # Increment cycle counter for the next set of dropdowns
+        self.cycle_counter += 1
 
     def submit_data(self):
         dropdown1_value = self.dropdown1.get()
