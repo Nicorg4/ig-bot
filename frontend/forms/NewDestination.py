@@ -1,6 +1,8 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from tkinter.font import BOLD
+import requests
+
 
 class NewDestination(tk.Frame):
     def __init__(self, parent, controller):
@@ -85,22 +87,47 @@ class NewDestination(tk.Frame):
         if destination_type == 'Location':
             location_id = self.location_id_entry.get()
             location_name = self.location_name_entry.get()
-            # Process the Location data
+            place_name = ""
+            hashtag_name = ""
 
         elif destination_type == 'Place':
+            location_id = ""
+            location_name = ""
             place_name = self.place_name_entry.get()
-            # Process the Place data
+            hashtag_name = ""
 
         elif destination_type == 'Hashtag':
+            location_id = ""
+            location_name = ""
+            place_name = ""
             hashtag_name = self.hashtag_name_entry.get()
-            # Process the Hashtag data
 
-        # For now, we will just print the values
-        print(f"Type: {destination_type}")
+        # Prepare the data for registration
+        data = {
+            'locationId': location_id,
+            'locationName': location_name,
+            'placeName': place_name,
+            'hashtag': hashtag_name,
+            'type': destination_type
+        }
 
-        if destination_type == 'Location':
-            print(f"Location ID: {location_id}, Location Name: {location_name}")
-        elif destination_type == 'Place':
-            print(f"Place Name: {place_name}")
-        elif destination_type == 'Hashtag':
-            print(f"Hashtag Name: {hashtag_name}")
+        url = 'http://localhost:8000/register-destination'
+
+        try:
+            response = requests.post(url, json=data)
+
+            if response.status_code == 200:
+                print('Destination registered successfully')
+                # Reset the form fields
+                self.type_var.set('')
+                self.location_id_entry.delete(0, tk.END)
+                self.location_name_entry.delete(0, tk.END)
+                self.place_name_entry.delete(0, tk.END)
+                self.hashtag_name_entry.delete(0, tk.END)
+            else:
+                print('Error in destination registration:', response.status_code)
+                messagebox.showerror(message='Error in destination registration', title='Error')
+
+        except requests.exceptions.RequestException as e:
+            print('Error in destination registration:', str(e))
+            messagebox.showerror(message='Error in destination registration', title='Error')
