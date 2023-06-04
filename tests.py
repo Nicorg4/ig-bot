@@ -105,23 +105,14 @@ def finalTest():
 
     start_time = datetime.now()
 
-<<<<<<< Updated upstream
     destination1 = Destination('', '', 'louboutinworld', '', 40, 10, 'place')
-=======
-    destination1 = Destination('miami-beach-floride', '236086360', '', '', 35, 10, 'location')
->>>>>>> Stashed changes
     destinations.append(destination1)
     start_bot(destinations, True)
     sleep(3600)
 
-<<<<<<< Updated upstream
     destination3 = Destination('nobu-malibu', '284736021647673', '', '', 20, 5, 'location')
     destinations2.append(destination3)
     create_new_cycle(destinations2)
-=======
-    destination2 = Destination('', '', '', 'fitness', 35, 10, 'hashtag')
-    destinations2.append(destination2)
->>>>>>> Stashed changes
     start_bot(destinations2, False)
     sleep(3600)
 
