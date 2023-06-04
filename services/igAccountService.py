@@ -9,9 +9,9 @@ class IgAccountService:
             new_account = IgAccountEntity(username=username, password=password, owner=owner)
             db_session.add(new_account)
             db_session.commit()
-            print('Cuenta registrada')
+            return True
         else:
-            print('La Cuenta ya existe')
+            return False
 
     def accountExists(self, username):
         return db_session.query(IgAccountEntity).filter_by(username=username).first()
