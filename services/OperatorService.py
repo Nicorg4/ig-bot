@@ -22,9 +22,9 @@ class OperatorService:
 
     def login(self, username, password):
         if self.check_user_credentials(username, password):
-            print('Usuario loggeado')
+            return True 
         else:
-            print('Credenciales incorrectas')
+           return False
 
     def getOperators(self):
         try:
