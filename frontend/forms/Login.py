@@ -72,3 +72,6 @@ class Login(tk.Frame):
 
         newCycle = tk.Button(frame_form_fill, text="Create new cycle", font=('Times', 15, BOLD), bg='#3a5ff6', bd=0, fg="#fff", command=lambda: controller.show_frame("NewCycle"))
         newCycle.pack(fill=tk.X, padx=20, pady=20)
+
+        newigAccount = tk.Button(frame_form_fill, text="Create new ig account", font=('Times', 15, BOLD), bg='#3a5ff6', bd=0, fg="#fff", command=lambda: controller.show_frame("NewIgAccount"))
+        newigAccount.pack(fill=tk.X, padx=20, pady=20)
