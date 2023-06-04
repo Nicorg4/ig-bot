@@ -2,14 +2,23 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from tkinter.font import BOLD
 import util.generic as utl
+import requests
 
 class Login(tk.Frame):
     def verify(self):
         user = self.user.get()
-        password = self.password.get()        
-        if(user == "root" and password == "1234") :
-            self.controller.show_frame("Register")
+        password = self.password.get()
+        
+        # Make an HTTP POST request to the login endpoint
+        url = 'http://localhost:8000/login'  # Replace with your server's URL
+        data = {'username': user, 'password': password}
+        response = requests.post(url, json=data)
+        
+        if response.status_code == 200:
+            # Login successful
+            self.controller.show_frame("NewCycle")
         else:
+            # Login failed
             messagebox.showerror(message="Password is incorrect", title="Message")
 
     def __init__(self, parent, controller):
