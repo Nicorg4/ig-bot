@@ -6,6 +6,7 @@ from forms.Login import Login
 from forms.Register import Register
 from forms.NewCycle import NewCycle
 from forms.NewIgAccount import NewIgAccount
+from forms.NewDestination import NewDestination
 
 class App(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -19,7 +20,7 @@ class App(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (Login, Register, NewCycle, NewIgAccount):
+        for F in (Login, Register, NewCycle, NewIgAccount, NewDestination):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
