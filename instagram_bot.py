@@ -26,6 +26,7 @@ IG_PASS = None
 COMMENTS_INDEX = 0
 MESSAGES_INDEX = 0
 MIN_POSTS = 0
+MAX_FOLLOWERS = 100000
 TOTAL_COMMENTS = 0
 TOTAL_DMS = 0
 CURRENT_CYCLE = None
@@ -217,8 +218,8 @@ def check_user_meets_criteria(username, name):
         print(Fore.RED + '[-] El post es demasiado antiguo\n')
         increase_old_counter()
         return False
-    if not check_user_uploads_enough():
-        print(Fore.RED + '[-] El usuario no tiene los posts suficientes\n')
+    if not check_user_uploads_and_followers_enough():
+        print(Fore.RED + '[-] El usuario no tiene los posts suficientes o tiene demasiados seguidores\n')
         return False
     # if user_is_brand(username, name):
     #     print('[-] El usuario es una empresa\n')
@@ -230,7 +231,7 @@ def increase_old_counter():
     TOO_OLD_COUNTER += 1
 
 def old_counter_too_big():
-    if TOO_OLD_COUNTER >= 5:
+    if TOO_OLD_COUNTER >= 15:
         return True
 
 def user_in_db(username):
@@ -251,10 +252,12 @@ def commenting_available():
             return False
     return False
  
-def check_user_uploads_enough(): 
-    number_of_posts = get_user_posts()
+def check_user_uploads_and_followers_enough(): 
+    posts_and_followers = get_user_posts_and_followers()
+    number_of_posts = posts_and_followers[0]
+    number_of_followers = posts_and_followers[1]
 
-    if number_of_posts > MIN_POSTS:
+    if number_of_posts > MIN_POSTS or number_of_followers < MAX_FOLLOWERS:
         return True
     return False
 
@@ -289,13 +292,14 @@ def user_is_brand(username, name):
             DRIVER.switch_to.window(main_window_handle)
             return False
 
-def get_user_posts():
+def get_user_posts_and_followers():
     try:
         user_anchor = wait_for_element(By.XPATH, "//div[@class='xt0psk2']//a", 3)
         actions = ActionChains(DRIVER)
         actions.move_to_element(user_anchor).perform()
         sleep_random()
         posts = wait_for_element(By.XPATH, "//div[contains(@class, 'x6s0dn4') and contains(@class, 'xrvj5dj')]/div/div/span/span", 3).text
+        followers = wait_for_element(By.XPATH, "//div[contains(@class, 'x6s0dn4') and contains(@class, 'xrvj5dj')]/div[contains(@class, 'xexx8yu')][2]//div/span", 3).text
 
         if 'K' in posts:
             posts = posts.replace('K', '')
@@ -304,10 +308,27 @@ def get_user_posts():
         elif ',' in posts:
             posts = posts.replace(',', '')
             posts = int(posts)
+        elif 'M' in posts:
+            posts = posts.replace('M', '')
+            posts = float(posts) * 1000000
+            posts = int(posts)
+
+        if 'K' in followers:
+            followers = followers.replace('K', '')
+            followers = float(followers) * 1000
+            followers = int(followers)
+        elif ',' in followers:
+            followers = followers.replace(',', '')
+            followers = int(followers)
+        elif 'M' in posts:
+            posts = posts.replace('M', '')
+            posts = float(posts) * 1000000
+            posts = int(posts)
+
     except:
-        return 0
+        return [0, 0]
     
-    return int(posts)
+    return [int(posts), int(followers)]
 
 def leave_comment(username):
     try:
@@ -329,8 +350,10 @@ def leave_comment(username):
 
         sleep_random()
 
-        #updated_textarea.send_keys(Keys.RETURN)  # o wait_for_element(By.XPATH, "//div[contains(text(),'Post')]").click()
-
+        updated_textarea.send_keys(Keys.RETURN)  # o wait_for_element(By.XPATH, "//div[contains(text(),'Post')]").click()
+        
+        sleep_random()
+        
         return True
     except:
         print(Fore.RED + "[-] El usuario bloqueo los comentarios \n")
@@ -455,8 +478,9 @@ def send_message(username):
         sleep(random.uniform(0.005, 0.02))
 
     sleep_random()
-    #message_textarea.send_keys(Keys.RETURN)
+    message_textarea.send_keys(Keys.RETURN)
     save_contacted_user(username[1], 'DM')
+    sleep_random()
 
     TOTAL_DMS += 1
     DM_SPAM_PROTECTION_COUNTER = 0
@@ -479,7 +503,7 @@ def return_home():
     DRIVER.get("https://www.instagram.com")
 
 def sleep_random():
-    sleep(random.uniform(4, 6))
+    sleep(random.uniform(3, 5))
 
 def wait_for_element(method, tag, time):
     element = WebDriverWait(DRIVER, time).until(EC.presence_of_element_located((method, tag)))

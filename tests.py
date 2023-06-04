@@ -46,13 +46,18 @@ def test02():
     instagram_bot.HEADLESS = False
 
     destinations = []
+    destinations2 = []
 
     start_time = datetime.now()
 
     destination1 = Destination('', '', 'faenamiamibeach', '', 3, 1, 'place')
     destinations.append(destination1)
-
     start_bot(destinations, True)
+    sleep(20)
+
+    destination3 = Destination('nobu-malibu', '284736021647673', '', '', 3, 1, 'location')
+    destinations2.append(destination3)
+    start_bot(destinations2, False)
 
     end_time = datetime.now()
     
@@ -83,13 +88,16 @@ def test03():
 
 
 def finalTest():
-    instagram_bot.IG_USER = 'miafrancisco'
-    instagram_bot.IG_PASS = 'its.miaanicole'
+    instagram_bot.IG_USER = 'its.miaanicole'
+    instagram_bot.IG_PASS = 'miafrancisco'
     instagram_bot.MIN_POSTS = 10
     instagram_bot.HEADLESS = False
 
     destinations = []
     destinations2 = []
+    destinations3 = []
+    destinations4 = []
+    destinations5 = []
 
     start_time = datetime.now()
 
@@ -101,6 +109,21 @@ def finalTest():
     destination3 = Destination('nobu-malibu', '284736021647673', '', '', 40, 10, 'location')
     destinations2.append(destination3)
     start_bot(destinations2, False)
+    sleep(3600)
+
+    destination3 = Destination('nobu-malibu', '284736021647673', '', '', 35, 10, 'location')
+    destinations3.append(destination3)
+    start_bot(destinations3, False)
+    sleep(3600)
+
+    destination4 = Destination('time-square', '364549005', '', '', 35, 10, 'location')
+    destinations4.append(destination4)
+    start_bot(destinations4, False)
+    sleep(3600)
+
+    destination5 = Destination('mgm-grand-las-vegas', '95099702', '', '', 35, 10, 'location')
+    destinations5.append(destination5)
+    start_bot(destinations5, False)
 
     end_time = datetime.now()
     
@@ -108,7 +131,7 @@ def finalTest():
     print("Total de comentarios realizados:", instagram_bot.TOTAL_COMMENTS, "\nTotal de mensajes enviados:", instagram_bot.TOTAL_DMS)
 
 try:
-    test02()
+    finalTest()
 except NoSuchElementException:
     print("\n\n[X] Se produjo una error en la ejecucion, se debe volver a iniciar el bot")
 except Exception as e:
