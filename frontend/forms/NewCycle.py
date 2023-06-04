@@ -7,9 +7,15 @@ class NewCycle(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.controller = controller
 
-        self.cycle_counter = 1
+        self.cycle_counter = 2
 
         self.config(bg='#fcfcfc')
+
+        self.destination_options = {
+            "Location": ["Option A", "Option B"],
+            "Place": ["Option C", "Option D"],
+            "Hashtag": ["Option E", "Option F"],
+        }
 
         # Fetch the list of account usernames
         self.accounts = self.get_accounts()
@@ -50,6 +56,10 @@ class NewCycle(tk.Frame):
         self.dropdown_frame = tk.Frame(self.scrollable_frame, bd=2, relief=tk.SOLID)
         self.dropdown_frame.pack(pady=10)  # add some padding for better visibility
 
+        # Add a title for the new set of dropdowns
+        cycle_title = tk.Label(self.dropdown_frame, text=f"Cycle #1", font=('Times', 16), fg="#666a88", bg='#fcfcfc')
+        cycle_title.pack(fill=tk.X, padx=20, pady=10)
+
 
         # Add first two dropdowns
         
@@ -60,12 +70,24 @@ class NewCycle(tk.Frame):
         self.add_button = tk.Button(self.scrollable_frame, text='+', command=self.add_new_dropdown_set)
         self.add_button.pack()
 
+
+    def update_destination_options(self, dest_type_dropdown):
+        selected_dest_type = dest_type_dropdown.get()
+        options = self.destination_options.get(selected_dest_type, [])
+        self.destination_dropdown['values'] = options
+        self.destination_dropdown.current(0)
+
     def add_dropdown(self, frame, label, values):
         dropdown_label = tk.Label(frame, text=label, font=('Times', 14), fg="#666a88", bg='#fcfcfc', anchor="w")
         dropdown_label.pack(fill=tk.X, padx=200, pady=5)
         dropdown = ttk.Combobox(frame, font=('Times', 14), values=values, state="readonly")
+
+        if label == "Destination Type":
+            dropdown.bind("<<ComboboxSelected>>", lambda e, dd=dropdown: self.update_destination_options(dd))
+
         dropdown.bind('<MouseWheel>', lambda e: 'break')  # Prevent default behavior
         dropdown.pack(fill=tk.X, padx=20, pady=10)
+        return dropdown
         
 
     def add_more_dropdowns(self):
@@ -77,7 +99,7 @@ class NewCycle(tk.Frame):
         self.dropdown_frame.pack(pady=10)
 
         # Add dropdowns to the self.dropdown_frame, not the self.scrollable_frame
-        self.add_dropdown(self.dropdown_frame, "Destination Type", self.accounts)
+        self.add_dropdown(self.dropdown_frame, "Destination Type", ["Location", "Place", "Hashtag"])
         self.add_dropdown(self.dropdown_frame, "Destination", ["Option A", "Option B", "Option C"])
         
         self.add_button = tk.Button(self.scrollable_frame, text='+', command=self.add_more_dropdowns)
@@ -98,8 +120,8 @@ class NewCycle(tk.Frame):
         cycle_title.pack(fill=tk.X, padx=20, pady=10)
 
         # Add two dropdowns to the new frame
-        self.add_dropdown(dropdown_frame, "Destination Type", self.accounts)
-        self.add_dropdown(dropdown_frame, "Destination", ["Option A", "Option B", "Option C"])
+        self.destination_type_dropdown = self.add_dropdown(dropdown_frame, "Destination Type", ["Location", "Place", "Hashtag"])
+        self.destination_dropdown = self.add_dropdown(dropdown_frame, "Destination", self.destination_options["Location"])
 
         # Recreate the add button
         self.add_button = tk.Button(self.scrollable_frame, text='+', command=self.add_new_dropdown_set)
