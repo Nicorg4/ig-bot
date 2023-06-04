@@ -50,11 +50,7 @@ def test02():
 
     start_time = datetime.now()
 
-<<<<<<< Updated upstream
     destination1 = Destination('', '', 'faenamiamibeach', '', 40, 10, 'place')
-=======
-    destination1 = Destination('', '', 'louboutinworld', '', 3, 1, 'place')
->>>>>>> Stashed changes
     destinations.append(destination1)
     start_bot(destinations, True)
     sleep(20)
