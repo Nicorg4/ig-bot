@@ -3,8 +3,8 @@ import instagram_bot
 import traceback
 
 def test01():
-    instagram_bot.IG_USER = 'pipslab.team@gmail.com'
-    instagram_bot.IG_PASS = 'pipslabteam2023'
+    instagram_bot.IG_USER = ''
+    instagram_bot.IG_PASS = ''
     instagram_bot.MIN_POSTS = 10
     instagram_bot.HEADLESS = True
 
@@ -40,8 +40,8 @@ def test01():
     print("Total de comentarios realizados:", instagram_bot.TOTAL_COMMENTS, "\nTotal de mensajes enviados:", instagram_bot.TOTAL_DMS)
 
 def test02():
-    instagram_bot.IG_USER = 'pipslab.team@gmail.com'
-    instagram_bot.IG_PASS = 'pipslabteam2023'
+    instagram_bot.IG_USER = ''
+    instagram_bot.IG_PASS = ''
     instagram_bot.MIN_POSTS = 10
     instagram_bot.HEADLESS = False
 
@@ -65,8 +65,8 @@ def test02():
     print("Total de comentarios realizados:", instagram_bot.TOTAL_COMMENTS, "\nTotal de mensajes enviados:", instagram_bot.TOTAL_DMS)
 
 def test03():
-    instagram_bot.IG_USER = 'pipslab.team@gmail.com'
-    instagram_bot.IG_PASS = 'pipslabteam2023'
+    instagram_bot.IG_USER = ''
+    instagram_bot.IG_PASS = ''
     instagram_bot.MIN_POSTS = 10
     instagram_bot.HEADLESS = True
 
