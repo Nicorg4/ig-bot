@@ -12,13 +12,13 @@ class NewCycle(tk.Frame):
         self.config(bg='#fcfcfc')
 
         self.destination_options = {
-            "Location": ["Option A", "Option B"],
-            "Place": ["Option C", "Option D"],
-            "Hashtag": ["Option E", "Option F"],
+            "Location": [],
+            "Place": [],
+            "Hashtag": [],
         }
-
         # Fetch the list of account usernames
         self.accounts = self.get_accounts()
+        self.fetch_destinations()
 
         # frame_form
         frame_form = tk.Frame(self, bd=0, relief=tk.SOLID, bg='#fcfcfc')
@@ -57,19 +57,23 @@ class NewCycle(tk.Frame):
         self.dropdown_frame.pack(pady=10)  # add some padding for better visibility
 
         # Add a title for the new set of dropdowns
-        cycle_title = tk.Label(self.dropdown_frame, text=f"Cycle #1", font=('Times', 16), fg="#666a88", bg='#fcfcfc')
-        cycle_title.pack(fill=tk.X, padx=20, pady=10)
+        cycle_title_frame = tk.Frame(self.dropdown_frame, bd=0, relief=tk.SOLID, bg='#fcfcfc')
+        cycle_title_frame.pack(fill=tk.X)
 
+        cycle_title = tk.Label(cycle_title_frame, text=f"Cycle #1", font=('Times', 16), fg="#666a88", bg='#fcfcfc')
+        cycle_title.pack(side=tk.LEFT, padx=20, pady=10)
 
         # Add first two dropdowns
-        
         self.add_dropdown(self.dropdown_frame, "Destination Type", ["Location", "Place", "Hashtag"])
-        self.add_dropdown(self.dropdown_frame, "Destination", ["Option A", "Option B", "Option C"])
+        self.destination_dropdown = self.add_dropdown(self.dropdown_frame, "Destination", self.destination_options["Location"])
 
         # Create add more dropdowns button
-        self.add_button = tk.Button(self.scrollable_frame, text='+', command=self.add_new_dropdown_set)
-        self.add_button.pack()
+        self.add_button = tk.Button(self.scrollable_frame, text='Add Cycle', command=self.add_new_dropdown_set)
+        self.add_button.pack(side=tk.LEFT, padx=10)
 
+        # Create submit button
+        self.submit_button = tk.Button(self.scrollable_frame, text='Submit', command=self.submit_data)
+        self.submit_button.pack(side=tk.LEFT, padx=10)
 
     def update_destination_options(self, dest_type_dropdown):
         selected_dest_type = dest_type_dropdown.get()
@@ -92,6 +96,7 @@ class NewCycle(tk.Frame):
 
     def add_more_dropdowns(self):
         self.add_button.destroy()
+        self.submit_button.destroy()
 
     # Clear the dropdown frame and re-create it to reset the border
         self.dropdown_frame.destroy()
@@ -103,21 +108,31 @@ class NewCycle(tk.Frame):
         self.add_dropdown(self.dropdown_frame, "Destination", ["Option A", "Option B", "Option C"])
         
         self.add_button = tk.Button(self.scrollable_frame, text='+', command=self.add_more_dropdowns)
-        self.add_button.pack()
+        self.add_button.pack(side=tk.LEFT, padx=10)
+
+        self.submit_button = tk.Button(self.scrollable_frame, text='Submit', command=self.submit_data)
+        self.submit_button.pack(side=tk.LEFT, padx=10)
 
 
     def add_new_dropdown_set(self):
         # Destroy the add button
         if hasattr(self, 'add_button'):
             self.add_button.destroy()
+            self.submit_button.destroy()
 
         # Create a new dropdown frame
         dropdown_frame = tk.Frame(self.scrollable_frame, bd=2, relief=tk.SOLID)
         dropdown_frame.pack(pady=10)  # add some padding for better visibility
 
         # Add a title for the new set of dropdowns
-        cycle_title = tk.Label(dropdown_frame, text=f"Cycle #{self.cycle_counter}", font=('Times', 16), fg="#666a88", bg='#fcfcfc')
-        cycle_title.pack(fill=tk.X, padx=20, pady=10)
+        cycle_title_frame = tk.Frame(dropdown_frame, bd=0, relief=tk.SOLID, bg='#fcfcfc')
+        cycle_title_frame.pack(fill=tk.X)
+
+        cycle_title = tk.Label(cycle_title_frame, text=f"Cycle #{self.cycle_counter}", font=('Times', 16), fg="#666a88", bg='#fcfcfc')
+        cycle_title.pack(side=tk.LEFT, padx=20, pady=10)
+
+        trash_button = tk.Button(cycle_title_frame, text="-", bg='red', fg='white', command=lambda ct=cycle_title_frame: self.delete_cycle(dropdown_frame))
+        trash_button.pack(side=tk.RIGHT, padx=20, pady=10)
 
         # Add two dropdowns to the new frame
         self.destination_type_dropdown = self.add_dropdown(dropdown_frame, "Destination Type", ["Location", "Place", "Hashtag"])
@@ -127,8 +142,15 @@ class NewCycle(tk.Frame):
         self.add_button = tk.Button(self.scrollable_frame, text='+', command=self.add_new_dropdown_set)
         self.add_button.pack()
 
+        self.submit_button = tk.Button(self.scrollable_frame, text='Submit', command=self.submit_data)
+        self.submit_button.pack()
+
         # Increment cycle counter for the next set of dropdowns
         self.cycle_counter += 1
+
+    def delete_cycle(self, cycle_title_frame):
+        cycle_title_frame.destroy()
+
 
     def submit_data(self):
         dropdown1_value = self.dropdown1.get()
@@ -152,3 +174,18 @@ class NewCycle(tk.Frame):
             print('Error:', e)
             return []
         return []
+    
+    def fetch_destinations(self):
+        url = 'http://localhost:8000/get-destinations'
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                destinations = response.json()['destinations']
+                for destination in destinations:
+                    dest_type = destination['type']
+                    dest_name = destination['locationName'] if dest_type == 'Location' else destination['placeName'] if dest_type == 'Place' else destination['hashtag']
+                    self.destination_options[dest_type].append(dest_name)
+            else:
+                print(f'Error: received status code {response.status_code}')
+        except requests.exceptions.RequestException as e:
+            print('Error:', e)
