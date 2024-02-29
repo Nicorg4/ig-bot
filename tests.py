@@ -88,8 +88,8 @@ def test03():
 
 
 def finalTest():
-    instagram_bot.IG_USER = 'its.miaanicole'
-    instagram_bot.IG_PASS = 'miafrancisco'
+    instagram_bot.IG_USER = 'Paiorod'
+    instagram_bot.IG_PASS = 'amordisfrute1991'
     instagram_bot.MIN_POSTS = 10
     instagram_bot.HEADLESS = False
 
@@ -98,33 +98,51 @@ def finalTest():
     destinations3 = []
     destinations4 = []
     destinations5 = []
+    destinations6 = []
+    destinations7 = []
+    destinations8 = []
 
     start_time = datetime.now()
 
-    destination1 = Destination('', '', 'louboutinworld', '', 40, 10, 'place')
+    destination1 = Destination('', '', 'summit', '', 35, 10, 'place')
     destinations.append(destination1)
     start_bot(destinations, True)
     sleep(3600)
 
-    destination3 = Destination('nobu-malibu', '284736021647673', '', '', 20, 5, 'location')
+    destination3 = Destination('beverly-hills', '149983395553010', '', '', 35, 5, 'location')
     destinations2.append(destination3)
     create_new_cycle(destinations2)
     start_bot(destinations2, False)
     sleep(3600)
 
-    destination3 = Destination('nobu-malibu', '284736021647673', '', '', 35, 10, 'location')
+    destination3 = Destination('malibu-california', '213873866', '', '', 35, 10, 'location')
     destinations3.append(destination3)
     start_bot(destinations3, False)
     sleep(3600)
 
-    destination4 = Destination('time-square', '364549005', '', '', 35, 10, 'location')
+    destination4 = Destination('', '', 'sexyfishlondon', '', 35, 10, 'place')
     destinations4.append(destination4)
     start_bot(destinations4, False)
     sleep(3600)
 
-    destination5 = Destination('mgm-grand-las-vegas', '95099702', '', '', 35, 10, 'location')
+    destination5 = Destination('hollywood-hills', '212998729', '', '', 35, 10, 'location')
     destinations5.append(destination5)
     start_bot(destinations5, False)
+    sleep(3600)
+
+    destination6 = Destination('', '', 'bellagio', '', 35, 10, 'place')
+    destinations6.append(destination6)
+    start_bot(destinations6, False)
+    sleep(3600)
+
+    destination7 = Destination('', '', 'venetianvegas', '', 35, 10, 'place')
+    destinations7.append(destination7)
+    start_bot(destinations7, False)
+    sleep(3600)
+
+    destination8 = Destination('', '', 'eatstk', '', 35, 10, 'place')
+    destinations8.append(destination8)
+    start_bot(destinations8, False)
 
     end_time = datetime.now()
     

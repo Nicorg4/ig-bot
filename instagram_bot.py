@@ -31,7 +31,7 @@ TOTAL_DMS = 0
 CURRENT_CYCLE = None
 TOO_OLD_COUNTER = 0
 DM_SPAM_PROTECTION_COUNTER = 0
-SPAM_MAX_WINDOW = 10
+SPAM_MAX_WINDOW = 1
 HEADLESS = False
 NLP_EN = spacy.load('en_core_web_sm')
 NLP_ES = spacy.load('es_core_news_sm')
@@ -60,12 +60,13 @@ def create_webdriver():
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
     options.add_experimental_option("detach", True) # Previene que el chrome se cierre cuando se terminen las tareas (No recomendado)
     options.binary_location = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
-    options.add_argument("--incognito")
+    #options.add_argument("--incognito")
     if HEADLESS:
         options.add_argument('--headless')  # Iniciar en modo headless
     options.add_argument('--window-size=1920x1080')  # Tamaño de ventana
     driver = webdriver.Chrome(service=service, options=options)
-    driver.get("https://www.instagram.com")
+    #driver.get("https://www.instagram.com")
+    driver.get("https://www.instagram.com/accounts/login/?next=https%3A%2F%2Fwww.instagram.com%2Faccounts%2Fonetap%2F%3Fnext%3D%252F%26__coig_login%3D1")
 
     return driver
 
@@ -87,6 +88,9 @@ def login_user():
     login_button = wait_for_element(By.XPATH, '//*[@id="loginForm"]/div/div[3]/button', 10)
     login_button.click()
 
+    sleep(5)
+
+    wait_for_auth(By.CLASS_NAME, "_aa56", 5)
     print(Fore.MAGENTA + 'Se esta utilizando la cuenta de:', USER[0], '\n')
 
 def contact_users():
@@ -133,7 +137,7 @@ def comment_on_hashtag(hashtag):
         if old_counter_too_big():
             global TOO_OLD_COUNTER
             TOO_OLD_COUNTER = 0
-            print(Fore.RED + "[-] Los posts son demasiado viejos \n")
+            print(Fore.YELLOW + "[-] Los posts son demasiado viejos, no se enviaran mas comentarios en esta ubicacion \n")
             break
         next_post()
 
@@ -359,7 +363,7 @@ def pick_comment():
     return comment
         
 def save_contacted_user(username, method):
-    user = [{"Username": username, "Method": method}]
+    user = [{"Username": username, "Method": method, "By": USER[0]}]
     existing_users = get_users_in_db()
     existing_users.extend(user)
 
@@ -408,7 +412,6 @@ def send_messages(destination):
         else:
             print(Fore.YELLOW + "[-] Se activo el protocolo de prevencion de deteccion de spam\n")
             DM_SPAM_PROTECTION_COUNTER = 0
-            SPAM_MAX_WINDOW = 5
             break
         next_post()
 
@@ -432,6 +435,9 @@ def send_message(username):
     try:
         message_button = wait_for_element(By.CSS_SELECTOR, "div.x1i10hfl[role='button']", 5)
         message_button.click()
+        if check_spam_detection():
+            DM_SPAM_PROTECTION_COUNTER = SPAM_MAX_WINDOW
+            return False
         sleep_random()
     except:
         print(Fore.RED + "[-] El usuario", username[1], 'no puede recibir mensajes \n')
@@ -449,7 +455,6 @@ def send_message(username):
         try:
             message_textarea = WebDriverWait(DRIVER, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'p.xat24cr.xdj266r')))
         except TimeoutException:
-            DM_SPAM_PROTECTION_COUNTER += 1
             print(Fore.RED + '[-] El usuario', username[1], 'tiene la cuenta privada', '\n')
             return False
 
@@ -476,6 +481,13 @@ def send_message(username):
 
     return True
 
+def check_spam_detection():
+    try:
+        wait_for_element(By.XPATH, "//div[@class='_abmp' and text()='Something went wrong. Please try again.']", 5)
+        return True
+    except:
+        return False
+
 def pick_message():
     with open("data.json") as file:
         data = json.load(file)
@@ -496,6 +508,15 @@ def sleep_random():
 def wait_for_element(method, tag, time):
     element = WebDriverWait(DRIVER, time).until(EC.presence_of_element_located((method, tag)))
     return element
+
+def wait_for_auth(method, tag, time):
+    while True:
+        try:
+            element = WebDriverWait(DRIVER, time).until(EC.presence_of_element_located((method, tag)))
+            return element
+        except:
+            print("Esperando autorizacion manual")
+            continue
    
 def bot_setup(id):
     global DRIVER
